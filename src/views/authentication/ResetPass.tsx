@@ -1,29 +1,49 @@
 import { useState } from "react";
 import { TextField, Button, Typography, Box } from "@mui/material";
-import { styled } from "@mui/material/styles"; 
+import { styled } from "@mui/material/styles";
 import logo from "../../assets/EII_logo.png";
+import { authService } from "../../db/services/authService";
 
 // Estilos personalizados con styled para el botón
 const ResetButton = styled(Button)(() => ({
-  backgroundColor: "#1F4D5D", 
-  color: "#FFFFFF", 
+  backgroundColor: "#1F4D5D",
+  color: "#FFFFFF",
   "&:hover": {
-    backgroundColor: "#21484A", 
+    backgroundColor: "#21484A",
   },
   textTransform: "none",
 }));
 
 const ResetPass = () => {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleResetPassword = async () => {
-    // 1. Verificar que el email no esté vacío
     if (!email) {
-      alert("Por favor, introduce tu email.");
+      setMessage("⚠️ Por favor, introduce tu email.");
       return;
     }
-    // }
-    console.log(`Solicitud de reseteo de contraseña para el email: ${email}`); // Simulación
+
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const response = await authService.resetPassword(email);
+      console.log("Respuesta backend:", response);
+
+      setMessage("✅ Se envió un correo con instrucciones para resetear tu contraseña.");
+    } catch (error: any) {
+      console.error("❌ Error reset pass:", error.response?.data || error.message);
+
+      if (error.response?.status === 404) {
+        setMessage("❌ No existe un usuario con ese email.");
+      } else {
+        setMessage("❌ Error al enviar el correo. Intenta de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -39,30 +59,19 @@ const ResetPass = () => {
       <Box
         className="bg-white rounded-xl shadow-xl p-8 pt-6 max-w-[500px] md:p-12 md:pt-8"
         sx={{
-          maxWidth: {
-            xs: "95%",
-            sm: 500,
-          },
+          maxWidth: { xs: "95%", sm: 500 },
         }}
       >
-        <Box
-          width="100%"
-          className=" flex flex-col justify-center items-center mb-4 md:mb-5"
-        >
+        {/* Logo */}
+        <Box width="100%" className="flex flex-col justify-center items-center mb-4 md:mb-5">
           <img alt="logo" className="h-15 sm:h-20" src={logo} />
         </Box>
+
         <Typography
           variant="h5"
           component="h2"
           align="center"
-          sx={{
-            fontWeight: "bold",
-            mb: 1,
-            fontSize: {
-              xs: "1.3rem",
-              sm: "1.5rem",
-            },
-          }}
+          sx={{ fontWeight: "bold", mb: 1, fontSize: { xs: "1.3rem", sm: "1.5rem" } }}
         >
           Reinicia tu contraseña
         </Typography>
@@ -70,18 +79,12 @@ const ResetPass = () => {
         <Typography
           variant="body1"
           align="center"
-          sx={{
-            mb: 1,
-            fontSize: {
-              xs: "0.9rem",
-              sm: "1rem",
-            },
-          }}
+          sx={{ mb: 1, fontSize: { xs: "0.9rem", sm: "1rem" } }}
         >
-          Te enviaremos un email con instrucciones para restablecer tu
-          contraseña. Por favor, introduce tu email asociado.
+          Te enviaremos un email con instrucciones para restablecer tu contraseña.
         </Typography>
 
+        {/* Input email */}
         <TextField
           label="Email asociado"
           type="email"
@@ -92,47 +95,38 @@ const ResetPass = () => {
           onChange={(e) => setEmail(e.target.value)}
           sx={{
             "& .MuiOutlinedInput-root": {
-              borderRadius: "12px", // Bordes redondeados
-              "& fieldset": {
-                borderColor: "#EBEBEB", // Color 4 para el borde del input
-              },
-              "&:hover fieldset": {
-                borderColor: "#21484A", // Color 1 para el borde hover
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#1F4D5D", // Color 5 para el borde focused
-              },
-              fontSize: {
-                xs: "0.8rem",
-                sm: "1rem",
-              },
-            },
-            "& .MuiOutlinedInput-input": {
-              padding: "13px",
-            },
-            "& .MuiInputLabel-root": {
-              fontSize: {
-                xs: "0.8rem",
-                sm: "1rem",
-              },
+              borderRadius: "12px",
+              "& fieldset": { borderColor: "#EBEBEB" },
+              "&:hover fieldset": { borderColor: "#21484A" },
+              "&.Mui-focused fieldset": { borderColor: "#1F4D5D" },
             },
           }}
         />
 
+        {/* Botón */}
         <Box mt={1} display="flex" justifyContent="center">
           <ResetButton
             variant="contained"
+            disabled={loading}
             onClick={handleResetPassword}
-            sx={{
-              fontSize: {
-                xs: "0.8rem",
-                sm: "1rem",
-              },
-            }}
+            sx={{ fontSize: { xs: "0.8rem", sm: "1rem" } }}
           >
-            Enviar email
+            {loading ? "Enviando..." : "Enviar email"}
           </ResetButton>
         </Box>
+
+        {/* Mensaje */}
+        {message && (
+          <Typography
+            align="center"
+            sx={{ mt: 2 }}
+            color={
+              message.startsWith("✅") ? "green" : message.startsWith("⚠️") ? "orange" : "red"
+            }
+          >
+            {message}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

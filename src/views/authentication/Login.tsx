@@ -4,156 +4,224 @@ import {
   FormControl,
   IconButton,
   InputLabel,
-  Link,
+  Typography,
+  TextField,
+  CircularProgress,
 } from "@mui/material";
-import useWindowDimensions from "../../scripts/useWindowDimensions";
-import InputLogin from "../../components/mui/InputLogin";
-import { useState } from "react";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
-import InputPassWord from "../../components/mui/InputPassWord";
-import logo from "../../assets/EII_logo.png";
-import imagenlogin from "../../assets/login/default.png";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authService } from "../../db/services/authService";
+import logo from "../../assets/EII_logo.png";
 
 function Login() {
-  const { width } = useWindowDimensions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
   const navigate = useNavigate();
 
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setMessage("⚠️ Ingresa correo y contraseña");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await authService.login(email, password);
+      setMessage("✅ Inicio de sesión exitoso");
+
+      // Guardar token
+      localStorage.setItem("token", response.access_token);
+
+      setTimeout(() => navigate("/home"), 1000);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        setMessage("❌ Credenciales incorrectas");
+      } else {
+        setMessage("❌ Error al iniciar sesión");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-row justify-center h-screen">
-      <div
-        className="size-full flex flex-col justify-center items-center h-full sm:[w-full] md:w-[w-full] lg:w-[50%] xl:w-[50%] 2xl:w-[50%] bg-white
-"
+    <div className="flex flex-row min-h-screen bg-[#f3fff5]">
+      {/* Panel lateral izquierdo */}
+      <Box
+        sx={{
+          width: 250,
+          bgcolor: "#d9fbe0",
+          p: 3,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <img alt="logo" src={logo} style={{ height: 70, margin: "0 auto" }} />
+          <Typography
+            variant="h6"
+            fontWeight="bold"
+            textAlign="center"
+            sx={{ mt: 2 }}
+          >
+            Bienvenido
+          </Typography>
+          <Typography variant="body2" textAlign="center" color="text.secondary">
+            Inicia sesión para continuar
+          </Typography>
+        </Box>
+
+        {/* Accesibilidad */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <span role="img" aria-label="lectura">
+            🔊
+          </span>
+          <Typography fontSize={14}>Modo lectura</Typography>
+        </Box>
+      </Box>
+
+      {/* Contenido principal */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 4,
+        }}
       >
         <Box
-          width="100%"
-          className="flex flex-col justify-center align-center max-w-[430px]"
-          p={4}
-          gap={width < 960 ? "16px" : "24px"}
+          sx={{
+            width: "100%",
+            maxWidth: 400,
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+          }}
         >
-          <Box
-            width="100%"
-            gap="16px"
-            className="flex flex-col justify-center items-center"
-          >
-            <img alt="logo" className="h-30" src={logo} />
+          <Typography variant="h5" fontWeight="bold" textAlign="center">
+            Iniciar sesión
+          </Typography>
 
-          </Box>
-          <Box
-            className="flex flex-col w-full max-w-[400px]"
-            sx={{
-              gap: width < 960 ? "16px" : "24px",
-              flexGrow: 1,
-            }}
-          >
-            <FormControl variant="standard">
-              <InputLabel
-                sx={{
-                  fontSize: "18px",
-                }}
-                shrink
-              >
-                Correo
-              </InputLabel>
-              <InputLogin
-                id="usuario"
-                type="text"
-                autoComplete="off"
-                name={`email-${Date.now()}`}
-                required
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmail(e.target.value);
-                }}
-              />
-            </FormControl>
-            <FormControl variant="standard">
-              <InputLabel
-                sx={{
-                  fontSize: "18px",
-                }}
-                shrink
-              >
-                Contraseña
-              </InputLabel>
-              <InputPassWord
-                id="passwordLogin"
-                type={showPassword ? "text" : "password"}
-                name={`passLogin-${Date.now()}`}
-                autoComplete="off"
-                value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  if (e.target.value.length <= 30) {
-                    setPassword(e.target.value);
-                  }
-                }}
-                endAdornment={
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    style={{ marginRight: "10px" }}
-                  >
+          {/* Campo email */}
+          <FormControl variant="standard">
+            <InputLabel shrink>Email</InputLabel>
+            <TextField
+              type="email"
+              variant="outlined"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              fullWidth
+            />
+          </FormControl>
+
+          {/* Campo contraseña */}
+          <FormControl variant="standard">
+            <InputLabel shrink>Contraseña</InputLabel>
+            <TextField
+              type={showPassword ? "text" : "password"}
+              variant="outlined"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              fullWidth
+              InputProps={{
+                endAdornment: (
+                  <IconButton onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? (
                       <VisibilityOffOutlinedIcon />
                     ) : (
                       <RemoveRedEyeOutlinedIcon />
                     )}
                   </IconButton>
-                }
-              />
-            </FormControl>
-          </Box>
+                ),
+              }}
+            />
+          </FormControl>
 
-          <Button variant="contained" sx={{ width: "100%" }} onClick={() => {}}>
-            Ingresar
+          {/* Botón login */}
+          <Button
+            variant="contained"
+            fullWidth
+            disabled={loading}
+            onClick={handleLogin}
+            sx={{
+              bgcolor: "#1F4D5D",
+              "&:hover": { bgcolor: "#21484A" },
+              textTransform: "none",
+            }}
+          >
+            {loading ? <CircularProgress size={24} /> : "Ingresar"}
           </Button>
 
-          <Box className="flex flex-col justify-centeritems-center" gap={2}>
-            <Link
+          {/* Mensajes */}
+          {message && (
+            <Typography
               fontSize={14}
               fontWeight={500}
               textAlign="center"
-              onClick={() => {
-                // redirecciona a la ruta /register
-                navigate("/auth/register");
-              }}
-              sx={{
-                cursor: "pointer",
-              }}
-              underline="none"
+              sx={{ mt: 1 }}
+              color={
+                message.startsWith("✅")
+                  ? "green"
+                  : message.startsWith("⚠️")
+                  ? "orange"
+                  : "red"
+              }
             >
-              Registrate aquí
-            </Link>
-            <Link
-              fontSize={14}
-              fontWeight={500}
-              textAlign="center"
-              onClick={() => {
-                // redirecciona a la ruta /auth/forgot-password
-                navigate("/auth/forgot-password");
-              }}
-              sx={{
-                cursor: "pointer",
-              }}
-              underline="none"
+              {message}
+            </Typography>
+          )}
+
+          {/* Links */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 14,
+              mt: 1,
+            }}
+          >
+            <Typography
+              sx={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => navigate("/auth/register")}
+            >
+              Crear cuenta
+            </Typography>
+            <Typography
+              sx={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => navigate("/auth/forgot-password")}
             >
               ¿Olvidaste tu contraseña?
-            </Link>
+            </Typography>
           </Box>
         </Box>
-      </div>
-      <div className="justify-center items-center bg-gray-100 h-full w-[50%] hidden lg:flex">
-        <img
-          src={imagenlogin}
-          alt="Imagen GPI"
-          className="object-cover h-full w-full "
-        />
-      </div>
+
+        {/* Accesibilidad abajo derecha */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Typography fontSize={14}>Daltonismo</Typography>
+          <span>🔘</span>
+        </Box>
+      </Box>
     </div>
   );
 }

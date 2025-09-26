@@ -7,9 +7,6 @@ const BlankLayout = Loadable(
   lazy(() => import("../layouts/blank-layout/BlankLayout"))
 );
 const AuthLayout = Loadable(lazy(() => import("../layouts/auth/AuthLayout")));
-const MainLayout = Loadable(
-  lazy(() => import("../layouts/dashboardLayout/MainLayout"))
-);
 
 /* ***End Layouts**** */
 const Error = Loadable(lazy(() => import("../views/authentication/Error")));
@@ -24,6 +21,21 @@ const ResetPass = Loadable(
   lazy(() => import("../views/authentication/ResetPass"))
 );
 
+// 👇 Perfil y subrutas
+const Perfil = Loadable(lazy(() => import("../views/perfil/Perfil")));
+const ModificarPerfil = Loadable(
+  lazy(() => import("../views/perfil/ModificarPerfil"))
+);
+const DatosCuenta = Loadable(
+  lazy(() => import("../views/perfil/DatosCuenta"))
+);
+const Direccion = Loadable(lazy(() => import("../views/perfil/Direccion")));
+const Preferencias = Loadable(
+  lazy(() => import("../views/perfil/Preferencias"))
+);
+
+const Vendedor = Loadable(lazy(() => import("../views/vendedor/Vendedor")));
+
 /* ****End Pages***** */
 
 const Router = [
@@ -36,46 +48,41 @@ const Router = [
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      { path: "", exact: true, element: <Navigate to="/auth/login" /> },
-      { path: "login", exact: true, element: <Login /> },
-      {
-        path: "register",
-        exact: true,
-        element: <Register />,
-      },
-      {
-        path: "forgot-password",
-        exact: true,
-        element: <ResetPass />,
-      },
-
+      { path: "", element: <Navigate to="/auth/login" /> },
+      { path: "login", element: <Login /> },
+      { path: "register", element: <Register /> },
+      { path: "forgot-password", element: <ResetPass /> },
       { path: "*", element: <Navigate to="/error/404" /> },
-      { path: "404", exact: true, element: <Error /> },
     ],
   },
   {
-    path: "/",
-    element: <MainLayout />,
+    path: "/home",
+    element: <Home />,
+  },
+  {
+    path: "/perfil",
     children: [
-      {
-        path: "",
-        exact: true,
-        element: <Home />,
-      },
-      {
-        path: "home",
-        exact: true,
-        element: <Home />,
-      },
-      { path: "*", element: <Navigate to="/error/404" /> },
+      { path: "", element: <Perfil /> }, // Perfil principal
+      { path: "modificar", element: <ModificarPerfil /> },
+      { path: "cuenta", element: <DatosCuenta /> },
+      { path: "direccion", element: <Direccion /> },
+      { path: "preferencias", element: <Preferencias /> },
     ],
+  },
+  {
+    path: "/vendedor",
+    element: <Vendedor />,
+  },
+  {
+    path: "/",
+    element: <Navigate to="/home" />,
   },
   {
     path: "/error",
     element: <BlankLayout />,
     children: [
       { path: "*", element: <Navigate to="/error/404" /> },
-      { path: "404", exact: true, element: <Error /> },
+      { path: "404", element: <Error /> },
     ],
   },
 ];
