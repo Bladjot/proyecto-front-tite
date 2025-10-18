@@ -1,275 +1,368 @@
 import {
+  AppBar,
+  Toolbar,
   Box,
   Button,
-  FormControl,
   IconButton,
-  InputLabel,
-  Link,
   Typography,
+  TextField,
+  Divider,
+  Paper,
+  InputBase,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  Link,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
-import React, { useState } from "react";
-import InputLogin from "../../components/mui/InputLogin";
-import InputPassWord from "../../components/mui/InputPassWord";
+import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
-import imagenregister from "../../assets/login/default.png";
-import logo from "../../assets/EII_logo.png";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { userService } from "../../db/services/userService"; // 👈 conexión al backend
+import { userService } from "../../db/services/userService";
+
+// ⬇️ NUEVOS LOGOS
+import brandLogo from "../../assets/brand/PulgaShop.jpg";
+import googleLogo from "../../assets/auth/google.png";
 
 function Register() {
-  const [email, setEmail] = useState("");
+  const [rut, setRut] = useState("");
   const [nombre, setNombre] = useState("");
-  const [apellido, setApellido] = useState("");
+  const [apellidos, setApellidos] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repassword, setRepassword] = useState("");
+  const [terms, setTerms] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
+  const [showRePassword, setShowRePassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [snack, setSnack] = useState<{
+    open: boolean;
+    message: string;
+    severity: "error" | "warning" | "success" | "info";
+  }>({ open: false, message: "", severity: "info" });
 
   const navigate = useNavigate();
 
-  // Validar formato de email
-  const isValidEmail = (mail: string) => /\S+@\S+\.\S+/.test(mail);
+  // Validaciones
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isValidRut = (v: string) => /^[0-9]{7,8}-[0-9Kk]$/.test(v);
+  const isValidPassword = (v: string) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(v);
 
   const handleRegister = async () => {
-    if (!nombre || !apellido || !email || !password || !repassword) {
-      setMessage("⚠️ Todos los campos son obligatorios");
-      return;
+    if (!rut || !nombre || !apellidos || !username || !email || !password || !repassword) {
+      return setSnack({ open: true, message: "Completa todos los campos", severity: "warning" });
+    }
+    if (!isValidRut(rut)) {
+      return setSnack({ open: true, message: "RUT inválido (ej: 12345678-9)", severity: "error" });
     }
     if (!isValidEmail(email)) {
-      setMessage("⚠️ Ingresa un correo electrónico válido");
-      return;
+      return setSnack({ open: true, message: "Correo no válido", severity: "error" });
+    }
+    if (!isValidPassword(password)) {
+      return setSnack({
+        open: true,
+        message: "Contraseña inválida: mínimo 8, con mayúscula, minúscula y número",
+        severity: "error",
+      });
     }
     if (password !== repassword) {
-      setMessage("⚠️ Las contraseñas no coinciden");
-      return;
+      return setSnack({ open: true, message: "Las contraseñas no coinciden", severity: "error" });
     }
-    if (password.length < 6) {
-      setMessage("⚠️ La contraseña debe tener al menos 6 caracteres");
-      return;
+    if (!terms) {
+      return setSnack({ open: true, message: "Debes aceptar los términos de servicio", severity: "warning" });
     }
 
     setLoading(true);
-    setMessage("");
-
     try {
       const newUser = {
+        rut,
         name: nombre,
-        lastName: apellido,
+        lastName: apellidos,
+        username,
         email,
         password,
-        roles: ["cliente"], // opcional
-        permisos: [],       // opcional
-        isActive: true      // opcional
+        roles: ["cliente"],
+        permisos: [],
+        isActive: true,
       };
-
-      const response = await userService.createUser(newUser); // FRONT → BACK
-      setMessage(`✅ Usuario ${response.email || response.name} creado con éxito`);
-
-      setTimeout(() => navigate("/auth/login"), 2000);
+      const res = await userService.createUser(newUser);
+      setSnack({
+        open: true,
+        message: `Usuario ${res?.email || res?.username || ""} creado con éxito`,
+        severity: "success",
+      });
+      setTimeout(() => navigate("/auth/login"), 900);
     } catch (error: any) {
-      // 👇 Mostrar detalle del backend en consola y pantalla
-      console.error("❌ Error creando usuario:", error.response?.data || error.message);
-
-      if (error.response?.data?.message) {
-        // Si el backend devuelve un array de errores de validación
-        if (Array.isArray(error.response.data.message)) {
-          setMessage("❌ " + error.response.data.message.join(", "));
-        } else {
-          setMessage("❌ " + error.response.data.message);
-        }
-      } else {
-        setMessage("❌ No se pudo crear el usuario");
-      }
+      const apiMsg = Array.isArray(error?.response?.data?.message)
+        ? error.response.data.message.join(", ")
+        : error?.response?.data?.message || "No se pudo crear el usuario";
+      setSnack({ open: true, message: `Error: ${apiMsg}`, severity: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-row justify-center items-center">
-      {/* Imagen lateral */}
-      <div className="hidden lg:flex justify-center items-center w-[40%] xl:w-[40%] 2xl:w-[50%] ">
-        <img
-          src={imagenregister}
-          alt="Imagen GPI"
-          className="object-cover h-full w-full"
-          style={{ maxHeight: "600px", maxWidth: "fit-content" }}
-        />
-      </div>
-
-      {/* Formulario */}
-      <div className="flex flex-col items-center justify-center w-full md:w-[100%] lg:w-[60%] xl:w-[60%] 2xl:w-[50%] bg-white overflow-auto py-8 flex-1 min-h-screen">
-        <Box
-          width="100%"
-          className="flex flex-col justify-center items-center max-w-[540px] gap-4"
-          p={4}
-        >
-          <Box className="flex flex-col justify-center items-center gap-4">
-            <Typography
-              fontSize={22}
-              lineHeight={"32px"}
-              letterSpacing={"3px"}
-              fontWeight={600}
-              className="uppercase le"
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", overflowX: "hidden" }}>
+      {/* Barra superior */}
+      <AppBar position="static" elevation={0} color="primary">
+        <Toolbar sx={{ gap: 2 }}>
+          {/* ⬇️ Logo PulgaShop más grande (50px) */}
+          <Box
+            component="img"
+            src={brandLogo}
+            alt="PulgaShop"
+            sx={{ height: 50, borderRadius: 1, bgcolor: "white", p: 0.5 }}
+          />
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+            <Box
+              sx={{
+                width: { xs: "92%", sm: 520 },
+                bgcolor: "white",
+                borderRadius: 1.5,
+                px: 1,
+                py: 0.25,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
             >
-              Registro
-            </Typography>
+              <SearchIcon fontSize="small" />
+              <InputBase placeholder="Buscar..." sx={{ flex: 1, fontSize: 14 }} />
+            </Box>
           </Box>
+          <IconButton edge="end" color="inherit" aria-label="menu">
+            <MenuIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
 
-          <Box className="flex flex-col w-full max-w-[600px] flex-1 gap-4">
-            <FormControl variant="standard">
-              <InputLabel shrink>Nombres</InputLabel>
-              <InputLogin
-                id="nombres"
-                type="text"
-                autoComplete="off"
-                required
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-              />
-            </FormControl>
+      {/* Contenido */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          minHeight: "calc(100vh - 64px)",
+          pt: { xs: 4, sm: 6 },
+          pb: { xs: 4, sm: 6 },
+        }}
+      >
+        <Paper
+          elevation={2}
+          sx={{
+            width: "100%",
+            maxWidth: 520,
+            p: { xs: 2.5, sm: 2.3 },
+            borderRadius: 2,
+            border: "1px solid rgba(0,0,0,0.25)",
+          }}
+        >
+          <Typography variant="h6" className="h-inter" fontWeight={700} textAlign="center">
+            Registro
+          </Typography>
 
-            <FormControl variant="standard">
-              <InputLabel shrink>Apellidos</InputLabel>
-              <InputLogin
-                id="apellidos"
-                type="text"
-                autoComplete="off"
-                required
-                value={apellido}
-                onChange={(e) => setApellido(e.target.value)}
-              />
-            </FormControl>
-
-            <FormControl variant="standard">
-              <InputLabel shrink>Correo electrónico</InputLabel>
-              <InputLogin
-                id="usuario"
-                type="email"
-                autoComplete="off"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </FormControl>
-
-            <FormControl variant="standard">
-              <InputLabel shrink>Contraseña</InputLabel>
-              <InputPassWord
-                id="passwordLogin"
-                type={showPassword ? "text" : "password"}
-                autoComplete="off"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                endAdornment={
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    style={{ marginRight: "10px" }}
-                  >
-                    {showPassword ? (
-                      <VisibilityOffOutlinedIcon />
-                    ) : (
-                      <RemoveRedEyeOutlinedIcon />
-                    )}
-                  </IconButton>
-                }
-              />
-            </FormControl>
-
-            <FormControl variant="standard">
-              <InputLabel shrink>Repite contraseña</InputLabel>
-              <InputPassWord
-                id="repasswordLogin"
-                type={showPassword ? "text" : "password"}
-                autoComplete="off"
-                required
-                value={repassword}
-                onChange={(e) => setRepassword(e.target.value)}
-                endAdornment={
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    style={{ marginRight: "10px" }}
-                  >
-                    {showPassword ? (
-                      <VisibilityOffOutlinedIcon />
-                    ) : (
-                      <RemoveRedEyeOutlinedIcon />
-                    )}
-                  </IconButton>
-                }
-              />
-            </FormControl>
-          </Box>
-
-          {/* Botón de registro normal */}
+          {/* Google arriba con ícono real */}
           <Button
+            fullWidth
             variant="outlined"
-            sx={{ width: "100%" }}
-            disabled={loading}
-            onClick={handleRegister}
-          >
-            {loading ? "Creando..." : "Crear cuenta"}
-          </Button>
-
-          {/* Botón de registro con Google */}
-          <Button
-            variant="contained"
-            color="secondary"
-            sx={{ width: "100%", mt: 2 }}
-            onClick={() => {
-              window.location.href = "http://localhost:3000/api/auth/google";
+            onClick={() => (window.location.href = "http://localhost:3000/api/auth/google")}
+            sx={{
+              mt: 2,
+              textTransform: "none",
+              bgcolor: "white",
+              borderColor: "#d0d0d0",
+              color: "#444",
+              "&:hover": { bgcolor: "#f5f5f5" },
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
             }}
           >
+            <Box component="img" src={googleLogo} alt="Google" sx={{ width: 18, height: 18 }} />
             Registrarse con Google
           </Button>
 
-          {/* Mensajes de estado */}
-          {message && (
-            <Typography
-              fontSize={14}
-              fontWeight={500}
-              textAlign="center"
-              sx={{ mt: 2 }}
-              color={
-                message.startsWith("✅")
-                  ? "green"
-                  : message.startsWith("⚠️")
-                  ? "orange"
-                  : "red"
-              }
-            >
-              {message}
-            </Typography>
-          )}
+          <Divider sx={{ my: 1.5 }} />
 
-          <Box className="flex flex-col justify-center items-center gap-2">
-            <Link
-              fontSize={14}
-              fontWeight={500}
-              textAlign="center"
-              onClick={() => navigate("/auth/login")}
-              sx={{ cursor: "pointer" }}
-              underline="none"
-            >
-              ¿Ya tienes una cuenta de docente?
+          {/* Inputs con espaciado uniforme */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+            <TextField
+              label="RUT"
+              placeholder="12345678-9"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={rut}
+              onChange={(e) => setRut(e.target.value)}
+              error={rut.length > 0 && !isValidRut(rut)}
+              helperText={rut.length > 0 && !isValidRut(rut) ? "Formato: 12345678-9" : " "}
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+            />
+
+            <TextField
+              label="Nombre"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              helperText=" "
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+            />
+
+            <TextField
+              label="Apellidos"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={apellidos}
+              onChange={(e) => setApellidos(e.target.value)}
+              helperText=" "
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+            />
+
+            <TextField
+              label="Nombre de usuario"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              helperText=" "
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+            />
+
+            <TextField
+              label="Correo"
+              type="email"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={email.length > 0 && !isValidEmail(email)}
+              helperText={
+                email.length > 0 && !isValidEmail(email)
+                  ? "Ingresa un correo válido (ej: nombre@dominio.com)"
+                  : " "
+              }
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+            />
+
+            <TextField
+              label="Contraseña"
+              type={showPassword ? "text" : "password"}
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              error={password.length > 0 && !isValidPassword(password)}
+              helperText={
+                password.length > 0 && !isValidPassword(password)
+                  ? "Mínimo 8, con mayúscula, minúscula y número"
+                  : " "
+              }
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword((s) => !s)} edge="end">
+                      {showPassword ? <VisibilityOffOutlinedIcon /> : <RemoveRedEyeOutlinedIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              label="Confirmar contraseña"
+              type={showRePassword ? "text" : "password"}
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={repassword}
+              onChange={(e) => setRepassword(e.target.value)}
+              autoComplete="new-password"
+              error={repassword.length > 0 && repassword !== password}
+              helperText={repassword.length > 0 && repassword !== password ? "Las contraseñas no coinciden" : " "}
+              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowRePassword((s) => !s)} edge="end">
+                      {showRePassword ? <VisibilityOffOutlinedIcon /> : <RemoveRedEyeOutlinedIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          {/* Checkbox centrado */}
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 0.5 }}>
+            <FormControlLabel
+              control={<Checkbox checked={terms} onChange={(e) => setTerms(e.target.checked)} />}
+              label="Aceptar términos de servicio"
+            />
+          </Box>
+
+          {/* Botón principal */}
+          <Button
+            variant="outlined"
+            fullWidth
+            disabled={loading}
+            onClick={handleRegister}
+            sx={{
+              mt: 1.5,
+              borderColor: "primary.main",
+              color: "primary.main",
+              textTransform: "none",
+              "&:hover": { borderColor: "primary.dark", bgcolor: "rgba(43,191,92,0.05)" },
+            }}
+          >
+            {loading ? <CircularProgress size={22} /> : "Crear cuenta"}
+          </Button>
+
+          {/* Link inferior */}
+          <Box sx={{ mt: 1.25, textAlign: "center" }}>
+            <Link component="button" variant="body2" underline="none" onClick={() => navigate("/auth/login")}>
+              ¿Ya tienes una cuenta?
             </Link>
           </Box>
+        </Paper>
+      </Box>
 
-          <Box
-            width="100%"
-            className=" flex flex-col justify-center items-center mt-3 lg:hidden"
-          >
-            <img alt="logo" className="h-20" src={logo} />
-          </Box>
-        </Box>
-      </div>
-    </div>
+      {/* Snackbar */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3500}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          elevation={2}
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 

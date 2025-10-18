@@ -1,33 +1,70 @@
 import {
+  AppBar,
+  Toolbar,
   Box,
   Button,
-  FormControl,
   IconButton,
-  InputLabel,
   Typography,
   TextField,
   CircularProgress,
+  Divider,
+  Paper,
+  InputBase,
+  Snackbar,
+  Alert,
+  InputAdornment,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../db/services/authService";
-import logo from "../../assets/EII_logo.png";
+
+// ⬇️ NUEVOS IMPORTS DE LOGOS
+import brandLogo from "../../assets/brand/PulgaShop.jpg";
+import googleLogo from "../../assets/auth/google.png";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Snackbar / Pop-up
+  const [snack, setSnack] = useState<{
+    open: boolean;
+    message: string;
+    severity: "error" | "warning" | "success" | "info";
+  }>({ open: false, message: "", severity: "error" });
+
   const navigate = useNavigate();
+
+  // Validaciones
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isValidPassword = (v: string) =>
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(v);
 
   const handleLogin = async () => {
     if (!email || !password) {
       setMessage("⚠️ Ingresa correo y contraseña");
+      setSnack({ open: true, message: "Ingresa correo y contraseña", severity: "warning" });
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setMessage("⚠️ Formato de correo no válido");
+      setSnack({ open: true, message: "Formato de correo no válido", severity: "error" });
+      return;
+    }
+    if (!isValidPassword(password)) {
+      setMessage("⚠️ Contraseña inválida (min 8, 1 mayúscula, 1 minúscula y 1 número)");
+      setSnack({
+        open: true,
+        message: "Contraseña inválida: mínimo 8, incluye mayúscula, minúscula y número",
+        severity: "error",
+      });
       return;
     }
 
@@ -37,16 +74,16 @@ function Login() {
     try {
       const response = await authService.login(email, password);
       setMessage("✅ Inicio de sesión exitoso");
-
-      // Guardar token
+      setSnack({ open: true, message: "Inicio de sesión exitoso", severity: "success" });
       localStorage.setItem("token", response.access_token);
-
-      setTimeout(() => navigate("/home"), 1000);
+      setTimeout(() => navigate("/home"), 800);
     } catch (error: any) {
       if (error.response?.status === 401) {
         setMessage("❌ Credenciales incorrectas");
+        setSnack({ open: true, message: "Credenciales incorrectas", severity: "error" });
       } else {
         setMessage("❌ Error al iniciar sesión");
+        setSnack({ open: true, message: "Error al iniciar sesión", severity: "error" });
       }
     } finally {
       setLoading(false);
@@ -54,123 +91,173 @@ function Login() {
   };
 
   return (
-    <div className="flex flex-row min-h-screen bg-[#f3fff5]">
-      {/* Panel lateral izquierdo */}
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+      {/* BARRA SUPERIOR */}
+      <AppBar position="static" elevation={0} color="primary">
+        <Toolbar sx={{ gap: 2 }}>
+          {/* ⬇️ Reemplazamos por logo PulgaShop */}
+          <Box
+            component="img"
+            src={brandLogo}
+            alt="PulgaShop"
+            sx={{ height: 50, borderRadius: 1, bgcolor: "white", p: 0.5 }}
+          />
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+            <Box
+              sx={{
+                width: { xs: "100%", sm: 520 },
+                bgcolor: "white",
+                borderRadius: 1.5,
+                px: 1,
+                py: 0.25,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <SearchIcon fontSize="small" />
+              <InputBase placeholder="Buscar..." sx={{ flex: 1, fontSize: 14 }} />
+            </Box>
+          </Box>
+          <IconButton edge="end" color="inherit" aria-label="menu">
+            <MenuIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
+      {/* CONTENIDO */}
       <Box
         sx={{
-          width: 250,
-          bgcolor: "#d9fbe0",
-          p: 3,
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <img alt="logo" src={logo} style={{ height: 70, margin: "0 auto" }} />
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            textAlign="center"
-            sx={{ mt: 2 }}
-          >
-            Bienvenido
-          </Typography>
-          <Typography variant="body2" textAlign="center" color="text.secondary">
-            Inicia sesión para continuar
-          </Typography>
-        </Box>
-
-        {/* Accesibilidad */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-          <span role="img" aria-label="lectura">
-            🔊
-          </span>
-          <Typography fontSize={14}>Modo lectura</Typography>
-        </Box>
-      </Box>
-
-      {/* Contenido principal */}
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
           justifyContent: "center",
-          alignItems: "center",
-          p: 4,
+          alignItems: "flex-start",
+          minHeight: "calc(100vh - 64px)",
+          pt: { xs: 6, sm: 10 },
         }}
       >
-        <Box
+        <Paper
+          elevation={2}
           sx={{
             width: "100%",
-            maxWidth: 400,
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
+            maxWidth: 430,
+            p: { xs: 3, sm: 4 },
+            borderRadius: 2,
+            border: "1px solid rgba(0,0,0,0.25)",
           }}
         >
-          <Typography variant="h5" fontWeight="bold" textAlign="center">
-            Iniciar sesión
+          <Typography variant="h6" className="h-inter" fontWeight={700} textAlign="center">
+            Completa tus datos para iniciar sesión
           </Typography>
 
-          {/* Campo email */}
-          <FormControl variant="standard">
-            <InputLabel shrink>Email</InputLabel>
-            <TextField
-              type="email"
-              variant="outlined"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              fullWidth
-            />
-          </FormControl>
+          {/* ⬇️ Botón Google con ícono alineado (punto verde) */}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => {
+              // aquí iría tu flujo de OAuth si ya lo tienes
+              // window.location.href = "http://localhost:3000/api/auth/google";
+            }}
+            sx={{
+              mt: 2,
+              textTransform: "none",
+              bgcolor: "white",
+              borderColor: "#d0d0d0",
+              color: "#444",
+              "&:hover": { bgcolor: "#f5f5f5" },
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
+            <Box component="img" src={googleLogo} alt="Google" sx={{ width: 18, height: 18 }} />
+            Continue with Google
+          </Button>
 
-          {/* Campo contraseña */}
-          <FormControl variant="standard">
-            <InputLabel shrink>Contraseña</InputLabel>
-            <TextField
-              type={showPassword ? "text" : "password"}
-              variant="outlined"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              fullWidth
-              InputProps={{
-                endAdornment: (
-                  <IconButton onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? (
-                      <VisibilityOffOutlinedIcon />
-                    ) : (
-                      <RemoveRedEyeOutlinedIcon />
-                    )}
+          <Divider sx={{ my: 2 }} />
+
+          {/* Email */}
+          <TextField
+            label="Email"
+            type="email"
+            variant="outlined"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            size="small"
+            fullWidth
+            error={email.length > 0 && !isValidEmail(email)}
+            helperText={
+              email.length > 0 && !isValidEmail(email)
+                ? "Ingresa un correo válido (ej: nombre@dominio.com)"
+                : " "
+            }
+            sx={{ mb: 1.5, "& .MuiInputBase-input": { py: 1.1 } }}
+          />
+
+          {/* Contraseña */}
+          <TextField
+            label="Contraseña"
+            type={showPassword ? "text" : "password"}
+            variant="outlined"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            size="small"
+            fullWidth
+            autoComplete="current-password"
+            error={password.length > 0 && !isValidPassword(password)}
+            helperText={
+              password.length > 0 && !isValidPassword(password)
+                ? "Contraseña inválida"
+                : " "
+            }
+            sx={{ mb: 1.5, "& .MuiInputBase-input": { py: 1.1 } }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    {showPassword ? <VisibilityOffOutlinedIcon /> : <RemoveRedEyeOutlinedIcon />}
                   </IconButton>
-                ),
-              }}
-            />
-          </FormControl>
+                </InputAdornment>
+              ),
+            }}
+          />
 
-          {/* Botón login */}
+          {/* Captcha (placeholder) */}
+          <Box
+            sx={{
+              border: "1px dashed #c8c8c8",
+              borderRadius: 1,
+              height: 78,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "text.secondary",
+              fontSize: 14,
+              mb: 2,
+            }}
+          >
+            Verificación (captcha)
+          </Box>
+
+          {/* Botón principal */}
           <Button
             variant="contained"
+            color="primary"
             fullWidth
             disabled={loading}
             onClick={handleLogin}
-            sx={{
-              bgcolor: "#1F4D5D",
-              "&:hover": { bgcolor: "#21484A" },
-              textTransform: "none",
-            }}
+            sx={{ py: 1.2, fontWeight: 600, textTransform: "none" }}
           >
             {loading ? <CircularProgress size={24} /> : "Ingresar"}
           </Button>
 
-          {/* Mensajes */}
+          {/* Mensaje de estado */}
           {message && (
             <Typography
               fontSize={14}
               fontWeight={500}
               textAlign="center"
-              sx={{ mt: 1 }}
+              sx={{ mt: 1.5 }}
               color={
                 message.startsWith("✅")
                   ? "green"
@@ -184,14 +271,7 @@ function Login() {
           )}
 
           {/* Links */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: 14,
-              mt: 1,
-            }}
-          >
+          <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 14, mt: 2 }}>
             <Typography
               sx={{ cursor: "pointer", textDecoration: "underline" }}
               onClick={() => navigate("/auth/register")}
@@ -205,24 +285,35 @@ function Login() {
               ¿Olvidaste tu contraseña?
             </Typography>
           </Box>
-        </Box>
-
-        {/* Accesibilidad abajo derecha */}
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 20,
-            right: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <Typography fontSize={14}>Daltonismo</Typography>
-          <span>🔘</span>
-        </Box>
+        </Paper>
       </Box>
-    </div>
+
+      {/* Snackbar (pop-up) */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3500}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          elevation={2}
+          onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Accesibilidad */}
+      <Box sx={{ position: "fixed", left: 16, bottom: 16, fontSize: 14, color: "text.secondary" }}>
+        🔊 Modo lectura
+      </Box>
+      <Box sx={{ position: "fixed", right: 16, bottom: 16, fontSize: 14, color: "text.secondary" }}>
+        Daltonismo ⭕
+      </Box>
+    </Box>
   );
 }
 
