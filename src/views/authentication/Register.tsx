@@ -23,7 +23,7 @@ import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { userService } from "../../db/services/userService";
+import { authService } from "../../db/services/authService";
 
 // ⬇️ NUEVOS LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
@@ -33,7 +33,6 @@ function Register() {
   const [rut, setRut] = useState("");
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repassword, setRepassword] = useState("");
@@ -52,25 +51,33 @@ function Register() {
   const navigate = useNavigate();
 
   // Validaciones
-  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const isValidRut = (v: string) => /^[0-9]{7,8}-[0-9Kk]$/.test(v);
-  const isValidPassword = (v: string) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(v);
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const isValidRut = (v: string) => /^\d{7,8}-[\dkK]$/.test(v.replace(/\./g, "").trim());
+  const isValidPassword = (v: string) => v.length >= 6;
 
   const handleRegister = async () => {
-    if (!rut || !nombre || !apellidos || !username || !email || !password || !repassword) {
-      return setSnack({ open: true, message: "Completa todos los campos", severity: "warning" });
+    const trimmedRut = rut.trim();
+    const trimmedName = nombre.trim();
+    const trimmedLastName = apellidos.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedRut || !trimmedName || !trimmedLastName || !trimmedEmail || !password || !repassword) {
+      return setSnack({ open: true, message: "Completa todos los campos requeridos", severity: "warning" });
     }
-    if (!isValidRut(rut)) {
-      return setSnack({ open: true, message: "RUT inválido (ej: 12345678-9)", severity: "error" });
+    if (!isValidRut(trimmedRut)) {
+      return setSnack({
+        open: true,
+        message: "RUT inválido (ej: 12.345.678-9 o 12345678-9)",
+        severity: "error",
+      });
     }
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(trimmedEmail)) {
       return setSnack({ open: true, message: "Correo no válido", severity: "error" });
     }
     if (!isValidPassword(password)) {
       return setSnack({
         open: true,
-        message: "Contraseña inválida: mínimo 8, con mayúscula, minúscula y número",
+        message: "Contraseña inválida: mínimo 6 caracteres",
         severity: "error",
       });
     }
@@ -83,24 +90,28 @@ function Register() {
 
     setLoading(true);
     try {
-      const newUser = {
-        rut,
-        name: nombre,
-        lastName: apellidos,
-        username,
-        email,
+      const payload = {
+        name: trimmedName,
+        lastName: trimmedLastName,
+        rut: trimmedRut,
+        email: trimmedEmail,
         password,
-        roles: ["cliente"],
-        permisos: [],
-        isActive: true,
       };
-      const res = await userService.createUser(newUser);
+      const response = await authService.register(payload);
+      const { user, access_token } = response || {};
+      if (access_token) {
+        localStorage.setItem("token", access_token);
+        localStorage.setItem("isLoggedIn", "true");
+      }
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      }
       setSnack({
         open: true,
-        message: `Usuario ${res?.email || res?.username || ""} creado con éxito`,
+        message: `Usuario ${user?.email || trimmedEmail} creado con éxito`,
         severity: "success",
       });
-      setTimeout(() => navigate("/auth/login"), 900);
+      setTimeout(() => navigate("/home"), 900);
     } catch (error: any) {
       const apiMsg = Array.isArray(error?.response?.data?.message)
         ? error.response.data.message.join(", ")
@@ -199,14 +210,18 @@ function Register() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
             <TextField
               label="RUT"
-              placeholder="12345678-9"
+              placeholder="12.345.678-9"
               variant="outlined"
               size="small"
               fullWidth
               value={rut}
-              onChange={(e) => setRut(e.target.value)}
-              error={rut.length > 0 && !isValidRut(rut)}
-              helperText={rut.length > 0 && !isValidRut(rut) ? "Formato: 12345678-9" : " "}
+              onChange={(e) => setRut(e.target.value.replace(/k/g, "K"))}
+              error={rut.trim().length > 0 && !isValidRut(rut)}
+              helperText={
+                rut.trim().length > 0 && !isValidRut(rut)
+                  ? "Formato válido: 12.345.678-9 o 12345678-9"
+                  : " "
+              }
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
             />
 
@@ -228,17 +243,6 @@ function Register() {
               fullWidth
               value={apellidos}
               onChange={(e) => setApellidos(e.target.value)}
-              helperText=" "
-              sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
-            />
-
-            <TextField
-              label="Nombre de usuario"
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
               helperText=" "
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
             />
@@ -272,7 +276,7 @@ function Register() {
               error={password.length > 0 && !isValidPassword(password)}
               helperText={
                 password.length > 0 && !isValidPassword(password)
-                  ? "Mínimo 8, con mayúscula, minúscula y número"
+                  ? "Mínimo 6 caracteres"
                   : " "
               }
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}

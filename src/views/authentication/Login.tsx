@@ -44,8 +44,7 @@ function Login() {
 
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const isValidPassword = (v: string) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(v);
+  const isValidPassword = (v: string) => v.length >= 6;
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -59,10 +58,10 @@ function Login() {
       return;
     }
     if (!isValidPassword(password)) {
-      setMessage("⚠️ Contraseña inválida (min 8, 1 mayúscula, 1 minúscula y 1 número)");
+      setMessage("⚠️ Contraseña inválida (mínimo 6 caracteres)");
       setSnack({
         open: true,
-        message: "Contraseña inválida: mínimo 8, incluye mayúscula, minúscula y número",
+        message: "Contraseña inválida: mínimo 6 caracteres",
         severity: "error",
       });
       return;
@@ -75,7 +74,13 @@ function Login() {
       const response = await authService.login(email, password);
       setMessage("✅ Inicio de sesión exitoso");
       setSnack({ open: true, message: "Inicio de sesión exitoso", severity: "success" });
-      localStorage.setItem("token", response.access_token);
+      if (response?.access_token) {
+        localStorage.setItem("token", response.access_token);
+        localStorage.setItem("isLoggedIn", "true");
+      }
+      if (response?.user) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
       setTimeout(() => navigate("/home"), 800);
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -207,7 +212,7 @@ function Login() {
             error={password.length > 0 && !isValidPassword(password)}
             helperText={
               password.length > 0 && !isValidPassword(password)
-                ? "Contraseña inválida"
+                ? "Mínimo 6 caracteres"
                 : " "
             }
             sx={{ mb: 1.5, "& .MuiInputBase-input": { py: 1.1 } }}
