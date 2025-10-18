@@ -9,8 +9,8 @@ const Error = () => (
       width: "100%",
     }}
   >
-    <h1>Error</h1>
-    <p>Something went wrong. Please try again later.</p>
+    <h1>¡UPS!</h1>
+    <p>Ocurrió un problema al cargar. Por favor intentelo más tarde.</p>
   </div>
 );
 
