@@ -18,9 +18,10 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { isAxiosError } from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../../db/services/authService";
+import { authService, type AuthResponse } from "../../db/services/authService";
 
 // ⬇️ NUEVOS IMPORTS DE LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
@@ -45,6 +46,9 @@ function Login() {
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isValidPassword = (v: string) => v.length >= 6;
+
+  const resolveRedirectTarget = (redirect?: string | null) =>
+    redirect && redirect.trim().length > 0 ? redirect : "/dashboard";
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -71,7 +75,7 @@ function Login() {
     setMessage("");
 
     try {
-      const response = await authService.login(email, password);
+      const response: AuthResponse = await authService.login(email, password);
       setMessage("✅ Inicio de sesión exitoso");
       setSnack({ open: true, message: "Inicio de sesión exitoso", severity: "success" });
       if (response?.access_token) {
@@ -81,9 +85,11 @@ function Login() {
       if (response?.user) {
         localStorage.setItem("user", JSON.stringify(response.user));
       }
-      setTimeout(() => navigate("/home"), 800);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
+      const target = resolveRedirectTarget(response?.redirectTo);
+      localStorage.setItem("redirectTo", target);
+      setTimeout(() => navigate(target, { replace: true }), 800);
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response?.status === 401) {
         setMessage("❌ Credenciales incorrectas");
         setSnack({ open: true, message: "Credenciales incorrectas", severity: "error" });
       } else {

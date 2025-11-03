@@ -20,6 +20,7 @@ const Register = Loadable(
 const ResetPass = Loadable(
   lazy(() => import("../views/authentication/ResetPass"))
 );
+const AdminUsers = Loadable(lazy(() => import("../views/admin/AdminUsers")));
 
 // 👇 Perfil y subrutas
 const Perfil = Loadable(lazy(() => import("../views/perfil/Perfil")));
@@ -60,6 +61,10 @@ const Router = [
     element: <Home />,
   },
   {
+    path: "/dashboard",
+    element: <Home />,
+  },
+  {
     path: "/perfil",
     children: [
       { path: "", element: <Perfil /> }, // Perfil principal
@@ -72,6 +77,10 @@ const Router = [
   {
     path: "/vendedor",
     element: <Vendedor />,
+  },
+  {
+    path: "/admin",
+    element: <AdminUsers />,
   },
   {
     path: "/",

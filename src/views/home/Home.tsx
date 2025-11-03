@@ -29,6 +29,15 @@ function Home() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user");
+    localStorage.removeItem("redirectTo");
+    setOpen(false);
+    navigate("/auth/login", { replace: true });
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#f3fff5]">
       {/* Botón menú hamburguesa (arriba derecha) */}
@@ -42,7 +51,7 @@ function Home() {
       {/* Drawer lateral derecho */}
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <Box sx={{ width: 200, bgcolor: "#d9fbe0", height: "100%" }}>
-          <List>
+          <List sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {["Perfil", "Vendedor", "X", "X"].map((text, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton onClick={() => handleMenuClick(text)}>
@@ -50,6 +59,12 @@ function Home() {
                 </ListItemButton>
               </ListItem>
             ))}
+            <Box sx={{ flexGrow: 1 }} />
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleLogout}>
+                <ListItemText primary="Cerrar sesión" sx={{ color: "error.main" }} />
+              </ListItemButton>
+            </ListItem>
           </List>
         </Box>
       </Drawer>

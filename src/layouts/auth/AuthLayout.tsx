@@ -1,27 +1,50 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+
+const normaliseRedirect = (redirectTo?: string | null) =>
+  redirectTo && redirectTo.trim().length > 0 ? redirectTo : null;
+
+const safeParseUser = () => {
+  try {
+    const rawUser = localStorage.getItem("user");
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch (error) {
+    console.warn("[auth] No se pudo parsear el usuario almacenado", error);
+    return null;
+  }
+};
 
 function AuthLayout() {
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkLoginStatus = () => {
-      // Simula la verificación de inicio de sesión desde el caché
       const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-      if (loggedIn) {
-        // Redirige a la ruta home si está logeado
-        // navigate("/app/dashboard", { replace: true }) por ejemplo
+      if (!loggedIn) return;
+
+      const storedRedirect = normaliseRedirect(localStorage.getItem("redirectTo"));
+      if (storedRedirect) {
+        navigate(storedRedirect, { replace: true });
+        return;
       }
+
+      const storedUser = safeParseUser();
+      const roles = Array.isArray(storedUser?.roles)
+        ? storedUser.roles.map((role: string) => role.toLowerCase())
+        : [];
+      const target = roles.includes("admin") ? "/admin" : "/dashboard";
+      navigate(target, { replace: true });
     };
 
     setTimeout(() => {
       checkLoginStatus();
       setIsLoading(false);
-    }, 500); // Simula una carga de 0.5 segundos
-  }, []);
+    }, 300);
+  }, [navigate]);
 
   if (isLoading) {
-    return <div>Cargando...</div>; // Puedes personalizar este componente de carga con spinner
+    return <div>Cargando...</div>;
   }
 
   return <Outlet />;

@@ -21,9 +21,10 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import { isAxiosError } from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../../db/services/authService";
+import { authService, type AuthResponse } from "../../db/services/authService";
 
 // ⬇️ NUEVOS LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
@@ -97,7 +98,7 @@ function Register() {
         email: trimmedEmail,
         password,
       };
-      const response = await authService.register(payload);
+      const response: AuthResponse = await authService.register(payload);
       const { user, access_token } = response || {};
       if (access_token) {
         localStorage.setItem("token", access_token);
@@ -111,11 +112,24 @@ function Register() {
         message: `Usuario ${user?.email || trimmedEmail} creado con éxito`,
         severity: "success",
       });
-      setTimeout(() => navigate("/home"), 900);
-    } catch (error: any) {
-      const apiMsg = Array.isArray(error?.response?.data?.message)
-        ? error.response.data.message.join(", ")
-        : error?.response?.data?.message || "No se pudo crear el usuario";
+      const target =
+        response?.redirectTo && response.redirectTo.trim().length > 0
+          ? response.redirectTo
+          : "/dashboard";
+      localStorage.setItem("redirectTo", target);
+      setTimeout(() => navigate(target, { replace: true }), 900);
+    } catch (error: unknown) {
+      const responseMessage =
+        isAxiosError(error) && error.response?.data?.message !== undefined
+          ? error.response.data.message
+          : error instanceof Error
+          ? error.message
+          : "No se pudo crear el usuario";
+      const apiMsg = Array.isArray(responseMessage)
+        ? responseMessage.filter((msg): msg is string => typeof msg === "string").join(", ")
+        : typeof responseMessage === "string"
+        ? responseMessage
+        : "No se pudo crear el usuario";
       setSnack({ open: true, message: `Error: ${apiMsg}`, severity: "error" });
     } finally {
       setLoading(false);

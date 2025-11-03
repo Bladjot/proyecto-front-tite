@@ -8,12 +8,19 @@ interface DrawerNavProps {
   openMenu: boolean;
   menuItems: {
     name: string;
-    href: string; // Path to navigate
+    href?: string; // Path to navigate
     icon: JSX.Element; // Icon heroicons
+    onClick?: () => void;
   }[];
+  onLogout: () => void;
 }
 
-function DrawerNav({ closeMenuAction, openMenu, menuItems }: DrawerNavProps) {
+function DrawerNav({
+  closeMenuAction,
+  openMenu,
+  menuItems,
+  onLogout,
+}: DrawerNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,7 +66,14 @@ function DrawerNav({ closeMenuAction, openMenu, menuItems }: DrawerNavProps) {
                 <Box
                   className="flex flex-row justify-between items-center"
                   key={index}
-                  onClick={() => navigate(item.href)}
+                  onClick={() => {
+                    if (item.onClick) {
+                      item.onClick();
+                    } else if (item.href) {
+                      navigate(item.href);
+                    }
+                    closeMenuAction();
+                  }}
                 >
                   <Box className="flex flex-row items-center gap-4">
                     {item.icon}
@@ -73,7 +87,7 @@ function DrawerNav({ closeMenuAction, openMenu, menuItems }: DrawerNavProps) {
                       {item.name}
                     </Typography>
                   </Box>
-                  {String(location.pathname).includes(item.href) ? (
+                  {item.href && String(location.pathname).includes(item.href) ? (
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -117,7 +131,8 @@ function DrawerNav({ closeMenuAction, openMenu, menuItems }: DrawerNavProps) {
           <p
             className=" text-md font-normal leading-6 cursor-pointer underline p-1 text-(--color-darkgreen)"
             onClick={() => {
-              navigate("/auth/login");
+              onLogout();
+              closeMenuAction();
             }}
           >
             Cerrar sesión
