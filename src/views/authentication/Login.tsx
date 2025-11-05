@@ -19,21 +19,25 @@ import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { isAxiosError } from "axios";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService, type AuthResponse } from "../../db/services/authService";
+// Importar Recaptcha
+import ReCAPTCHA from "react-google-recaptcha";
 
-// ⬇️ NUEVOS IMPORTS DE LOGOS
+// IMPORTS DE LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
 import googleLogo from "../../assets/auth/google.png";
 
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   // Snackbar / Pop-up
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -70,12 +74,16 @@ function Login() {
       });
       return;
     }
-
+    if (!recaptchaToken) {
+      setMessage("⚠️ Por favor, completa la verificación reCAPTCHA");
+      setSnack({ open: true, message: "Completa la verificación", severity: "warning" });
+      return;
+    }
     setLoading(true);
     setMessage("");
 
     try {
-      const response: AuthResponse = await authService.login(email, password);
+      const response: AuthResponse = await authService.login(email, password, recaptchaToken);
       setMessage("✅ Inicio de sesión exitoso");
       setSnack({ open: true, message: "Inicio de sesión exitoso", severity: "success" });
       if (response?.access_token) {
@@ -98,6 +106,8 @@ function Login() {
       }
     } finally {
       setLoading(false);
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
   };
 
@@ -165,8 +175,12 @@ function Login() {
             fullWidth
             variant="outlined"
             onClick={() => {
-              // aquí iría tu flujo de OAuth si ya lo tienes
-              // window.location.href = "http://localhost:3000/api/auth/google";
+              // Construye la URL del backend usando la variable de entorno VITE_API_BASE_URL
+              // Si no está definida, usa una ruta relativa para que el proxy de Vite funcione.
+              const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? "";
+              const base = API_BASE.trim().replace(/\/$/, "");
+              const url = base ? `${base}/api/auth/google` : "/api/auth/google";
+              window.location.href = url;
             }}
             sx={{
               mt: 2,
@@ -233,21 +247,24 @@ function Login() {
             }}
           />
 
-          {/* Captcha (placeholder) */}
-          <Box
-            sx={{
-              border: "1px dashed #c8c8c8",
-              borderRadius: 1,
-              height: 78,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "text.secondary",
-              fontSize: 14,
-              mb: 2,
-            }}
-          >
-            Verificación (captcha)
+          {/* Captcha verificación */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, my: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Verificación de seguridad
+            </Typography>
+            
+            {!RECAPTCHA_SITE_KEY ? (
+              <Alert severity="error" sx={{ width: '100%' }}>
+                Falta la clave VITE_RECAPTCHA_SITE_KEY en el .env
+              </Alert>
+            ) : (
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={(token) => setRecaptchaToken(token)}
+                onExpired={() => setRecaptchaToken(null)}
+              />
+            )}
           </Box>
 
           {/* Botón principal */}

@@ -7,6 +7,7 @@ export type RegisterPayload = {
   rut: string;
   email: string;
   password: string;
+  recaptchaToken: string;
 };
 
 export type AuthUser = {
@@ -49,10 +50,11 @@ const normaliseAuthResponse = (data: AuthResponse): AuthResponse => {
 };
 
 export const authService = {
-  login: async (email: string, password: string): Promise<AuthResponse> => {
+  login: async (email: string, password: string, recaptchaToken: string): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>(getAuthPath("/auth/login"), {
       email,
       password,
+      recaptchaToken,
     });
     return normaliseAuthResponse(response.data);
   },
