@@ -22,14 +22,16 @@ import SearchIcon from "@mui/icons-material/Search";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { isAxiosError } from "axios";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService, type AuthResponse } from "../../db/services/authService";
-
+// Importar Recaptcha
+import ReCAPTCHA from "react-google-recaptcha";
 // ⬇️ NUEVOS LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
 import googleLogo from "../../assets/auth/google.png";
 
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Register() {
   const [rut, setRut] = useState("");
   const [nombre, setNombre] = useState("");
@@ -48,7 +50,8 @@ function Register() {
     message: string;
     severity: "error" | "warning" | "success" | "info";
   }>({ open: false, message: "", severity: "info" });
-
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Validaciones
@@ -88,7 +91,9 @@ function Register() {
     if (!terms) {
       return setSnack({ open: true, message: "Debes aceptar los términos de servicio", severity: "warning" });
     }
-
+    if (!recaptchaToken) {
+      return setSnack({ open: true, message: "Por favor, completa la verificación reCAPTCHA", severity: "warning" });
+    }
     setLoading(true);
     try {
       const payload = {
@@ -97,6 +102,7 @@ function Register() {
         rut: trimmedRut,
         email: trimmedEmail,
         password,
+        recaptchaToken,
       };
       const response: AuthResponse = await authService.register(payload);
       const { user, access_token } = response || {};
@@ -133,6 +139,8 @@ function Register() {
       setSnack({ open: true, message: `Error: ${apiMsg}`, severity: "error" });
     } finally {
       setLoading(false);
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
   };
 
@@ -328,7 +336,21 @@ function Register() {
               }}
             />
           </Box>
-
+          {/* ReCAPTCHA */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 0.5 }}>
+            {!RECAPTCHA_SITE_KEY ? (
+              <Alert severity="error" sx={{ width: '100%' }}>
+                Falta la clave VITE_RECAPTCHA_SITE_KEY en el .env
+              </Alert>
+            ) : (
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={RECAPTCHA_SITE_KEY}
+                onChange={(token) => setRecaptchaToken(token)}
+                onExpired={() => setRecaptchaToken(null)}
+              />
+            )}
+          </Box>
           {/* Checkbox centrado */}
           <Box sx={{ display: "flex", justifyContent: "center", mt: 0.5 }}>
             <FormControlLabel
