@@ -171,6 +171,25 @@ export const userService = {
     }
   },
 
+  // Leer detalles de perfil (bio, preferencias) del usuario autenticado
+  getProfileDetails: async () => {
+    const response = await api.get<Record<string, unknown>>(
+      "/auth/profile-details",
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  // Guardar detalles de perfil (bio, preferencias) del usuario autenticado
+  saveProfileDetails: async (details: { bio?: string; preferences?: string }) => {
+    const response = await api.patch<Record<string, unknown>>(
+      "/auth/profile-details",
+      { bio: details.bio, preferences: details.preferences },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
   // Listar todos los usuarios (solo admins)
   getUsers: async () => {
     const response = await api.get<RawUser[]>("/users", {

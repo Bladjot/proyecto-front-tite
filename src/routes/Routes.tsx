@@ -30,7 +30,6 @@ const ModificarPerfil = Loadable(
 const DatosCuenta = Loadable(
   lazy(() => import("../views/perfil/DatosCuenta"))
 );
-const Direccion = Loadable(lazy(() => import("../views/perfil/Direccion")));
 const Preferencias = Loadable(
   lazy(() => import("../views/perfil/Preferencias"))
 );
@@ -70,7 +69,6 @@ const Router = [
       { path: "", element: <Perfil /> }, // Perfil principal
       { path: "modificar", element: <ModificarPerfil /> },
       { path: "cuenta", element: <DatosCuenta /> },
-      { path: "direccion", element: <Direccion /> },
       { path: "preferencias", element: <Preferencias /> },
     ],
   },
