@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { authService, type AuthResponse } from "../../db/services/authService";
 // Importar Recaptcha
 import ReCAPTCHA from "react-google-recaptcha";
+import { resolvePostAuthRedirect } from "../../utils/auth";
 
 // IMPORTS DE LOGOS
 import brandLogo from "../../assets/brand/PulgaShop.jpg";
@@ -50,9 +51,6 @@ function Login() {
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isValidPassword = (v: string) => v.length >= 6;
-
-  const resolveRedirectTarget = (redirect?: string | null) =>
-    redirect && redirect.trim().length > 0 ? redirect : "/dashboard";
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -93,7 +91,7 @@ function Login() {
       if (response?.user) {
         localStorage.setItem("user", JSON.stringify(response.user));
       }
-      const target = resolveRedirectTarget(response?.redirectTo);
+      const target = resolvePostAuthRedirect(response?.redirectTo, response?.user?.roles);
       localStorage.setItem("redirectTo", target);
       setTimeout(() => navigate(target, { replace: true }), 800);
     } catch (error: unknown) {

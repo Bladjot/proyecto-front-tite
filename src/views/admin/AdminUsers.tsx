@@ -10,6 +10,7 @@ import {
   DialogTitle,
   FormControl,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   OutlinedInput,
@@ -28,7 +29,8 @@ import {
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import LogoutIcon from "@mui/icons-material/Logout";
+import HomeIcon from "@mui/icons-material/Home";
+import SearchIcon from "@mui/icons-material/Search";
 import { isAxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +41,7 @@ import {
   type RoleRecord,
   userService,
 } from "../../db/services/userService";
+import { formatRut, isRutFormatValid, normaliseRut, sanitiseRutInput } from "../../utils/rut";
 
 type SnackbarState = {
   open: boolean;
@@ -88,7 +91,7 @@ const toFormState = (user: UserRecord): UserFormState => ({
   name: user.name,
   lastName: user.lastName,
   email: user.email,
-  rut: user.rut ?? "",
+  rut: user.rut ? formatRut(user.rut) : "",
   roles: Array.isArray(user.roles)
     ? user.roles
         .map((role) => normaliseRoleValue(role))
@@ -107,6 +110,7 @@ function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [snack, setSnack] = useState<SnackbarState>(defaultSnackState);
   const [roleCatalog, setRoleCatalog] = useState<RoleRecord[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const currentUserIsAdmin = useMemo(() => {
     try {
@@ -211,6 +215,34 @@ function AdminUsers() {
     [roleLabelMap]
   );
 
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) return users;
+
+    const query = searchTerm.trim().toLowerCase();
+    const normalisedQuery = query.replace(/[.\-_\s]/g, "");
+
+    return users.filter((user) => {
+      const candidates = [
+        user.id,
+        user.email,
+        user.rut,
+        user.rut ? formatRut(user.rut) : null,
+        user.name,
+        user.lastName,
+        `${user.name} ${user.lastName}`,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .map((value) => value.toLowerCase());
+
+      if (candidates.some((value) => value.includes(query))) {
+        return true;
+      }
+
+      const normalisedRut = (user.rut ?? "").toLowerCase().replace(/[.\-_\s]/g, "");
+      return normalisedRut.includes(normalisedQuery);
+    });
+  }, [users, searchTerm]);
+
   const handleOpenCreate = () => {
     setFormState(buildEmptyFormState());
     setDialogOpen(true);
@@ -234,6 +266,9 @@ function AdminUsers() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return "Formato de correo inválido";
     if (!data.roles.length) return "Selecciona al menos un rol";
+    if (data.rut.trim() && !isRutFormatValid(data.rut.trim())) {
+      return "El RUT debe tener el formato XX.XXX.XXX-Y";
+    }
     if (!data.id && data.password.trim().length < 6) {
       return "La contraseña debe tener mínimo 6 caracteres";
     }
@@ -254,7 +289,7 @@ function AdminUsers() {
       name: formState.name.trim(),
       lastName: formState.lastName.trim(),
       email: formState.email.trim().toLowerCase(),
-      rut: formState.rut.trim() || undefined,
+      rut: normaliseRut(formState.rut) || undefined,
       roles: formState.roles,
     };
     if (formState.password.trim().length > 0) {
@@ -315,12 +350,9 @@ function AdminUsers() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("user");
-    localStorage.removeItem("redirectTo");
-    navigate("/auth/login", { replace: true });
+  const handleBackToMenu = () => {
+    localStorage.setItem("redirectTo", "/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   if (!currentUserIsAdmin) {
@@ -329,7 +361,13 @@ function AdminUsers() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#f5f7fa", py: 6, px: { xs: 2, md: 6 } }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+      <Stack
+        direction={{ xs: "column", md: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", md: "center" }}
+        gap={3}
+        mb={4}
+      >
         <Box>
           <Typography variant="h4" fontWeight={700}>
             Administración de usuarios
@@ -338,14 +376,24 @@ function AdminUsers() {
             Crea, edita o elimina usuarios de la plataforma.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2}>
-          <Button
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
+          <TextField
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar por RUT, ID, correo o nombre"
+            size="small"
             variant="outlined"
-            color="secondary"
-            startIcon={<LogoutIcon />}
-            onClick={handleLogout}
-          >
-            Cerrar sesión
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: { xs: "100%", sm: 260 }, bgcolor: "white" }}
+          />
+          <Button variant="outlined" color="secondary" startIcon={<HomeIcon />} onClick={handleBackToMenu}>
+            Volver al menú
           </Button>
           <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={handleOpenCreate}>
             Nuevo usuario
@@ -374,41 +422,47 @@ function AdminUsers() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <Typography fontWeight={600}>
-                      {user.name} {user.lastName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.rut || "—"}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      {user.roles.length ? (
-                        user.roles.map((role) => (
-                          <Chip key={role} label={getRoleLabel(role)} size="small" />
-                        ))
-                      ) : (
-                        <Chip label="Sin rol" size="small" color="warning" />
-                      )}
-                    </Stack>
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton onClick={() => handleOpenEdit(user)} size="small">
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton onClick={() => handleDeleteUser(user.id)} size="small" color="error">
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!users.length && (
+              {filteredUsers.length ? (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <Typography fontWeight={600}>
+                        {user.name} {user.lastName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        ID: {user.id}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.rut ? formatRut(user.rut) : "—"}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        {user.roles.length ? (
+                          user.roles.map((role) => (
+                            <Chip key={role} label={getRoleLabel(role)} size="small" />
+                          ))
+                        ) : (
+                          <Chip label="Sin rol" size="small" color="warning" />
+                        )}
+                      </Stack>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton onClick={() => handleOpenEdit(user)} size="small">
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteUser(user.id)} size="small" color="error">
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
                   <TableCell colSpan={5}>
                     <Typography textAlign="center" py={4} color="text.secondary">
-                      No hay usuarios registrados.
+                      {users.length
+                        ? "No se encontraron usuarios que coincidan con la búsqueda."
+                        : "No hay usuarios registrados."}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -453,10 +507,19 @@ function AdminUsers() {
               label="RUT"
               value={formState.rut}
               onChange={(event) =>
-                setFormState((prev) => ({ ...prev, rut: event.target.value }))
+                setFormState((prev) => ({
+                  ...prev,
+                  rut: sanitiseRutInput(event.target.value),
+                }))
               }
               fullWidth
               placeholder="12.345.678-9"
+              error={formState.rut.trim().length > 0 && !isRutFormatValid(formState.rut)}
+              helperText={
+                formState.rut.trim().length > 0 && !isRutFormatValid(formState.rut)
+                  ? "Formato requerido: 12.345.678-9"
+                  : " "
+              }
             />
             <FormControl fullWidth>
               <InputLabel id="roles-label">Roles</InputLabel>

@@ -2,6 +2,7 @@
 import bcrypt from "bcryptjs";
 import { isAxiosError } from "axios";
 import { api } from "../config/api";
+import { normaliseRut } from "../../utils/rut";
 
 export type RawUser = {
   id?: string;
@@ -70,12 +71,54 @@ const getAuthHeaders = () => {
   };
 };
 
+const resolveRutValue = (raw: RawUser): string => {
+  const base = raw as Record<string, unknown>;
+
+  const candidateValues: unknown[] = [
+    base?.rut,
+    base?.RUT,
+    base?.Rut,
+    base?.rutUsuario,
+    base?.rut_user,
+    base?.rutUser,
+    base?.dni,
+    base?.DNI,
+    base?.documento,
+    base?.documentNumber,
+  ];
+
+  // 👇 Busca rut en estructuras anidadas comunes
+  const nestedSources = [
+    (base?.perfil as Record<string, unknown>)?.rut,
+    (base?.profile as Record<string, unknown>)?.rut,
+    (base?.persona as Record<string, unknown>)?.rut,
+    (base?.identificacion as Record<string, unknown>)?.rut,
+    (base?.datosPersonales as Record<string, unknown>)?.rut,
+  ];
+
+  const allCandidates = [...candidateValues, ...nestedSources];
+
+  for (const candidate of allCandidates) {
+    if (typeof candidate === "string") {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return normaliseRut(trimmed);
+      }
+    }
+    if (typeof candidate === "number") {
+      return normaliseRut(String(candidate));
+    }
+  }
+
+  return "";
+};
+
 export const mapUserRecord = (raw: RawUser): UserRecord => ({
   id: raw.id || raw._id || "",
   name: raw.name ?? "",
   lastName: raw.lastName ?? "",
   email: raw.email ?? "",
-  rut: raw.rut ?? "",
+  rut: resolveRutValue(raw),
   roles: Array.isArray(raw.roles)
     ? raw.roles
         .map((role) => normaliseRoleValue(role))

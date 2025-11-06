@@ -25,6 +25,8 @@ import { isAxiosError } from "axios";
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService, type AuthResponse } from "../../db/services/authService";
+import { normaliseRut, sanitiseRutInput, isRutFormatValid } from "../../utils/rut";
+import { resolvePostAuthRedirect } from "../../utils/auth";
 // Importar Recaptcha
 import ReCAPTCHA from "react-google-recaptcha";
 // ⬇️ NUEVOS LOGOS
@@ -56,7 +58,7 @@ function Register() {
 
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-  const isValidRut = (v: string) => /^\d{7,8}-[\dkK]$/.test(v.replace(/\./g, "").trim());
+  const isValidRut = (value: string) => isRutFormatValid(value);
   const isValidPassword = (v: string) => v.length >= 6;
 
   const handleRegister = async () => {
@@ -71,10 +73,11 @@ function Register() {
     if (!isValidRut(trimmedRut)) {
       return setSnack({
         open: true,
-        message: "RUT inválido (ej: 12.345.678-9 o 12345678-9)",
+        message: "RUT inválido (usa el formato 12.345.678-9)",
         severity: "error",
       });
     }
+    const normalisedRut = normaliseRut(trimmedRut);
     if (!isValidEmail(trimmedEmail)) {
       return setSnack({ open: true, message: "Correo no válido", severity: "error" });
     }
@@ -99,7 +102,7 @@ function Register() {
       const payload = {
         name: trimmedName,
         lastName: trimmedLastName,
-        rut: trimmedRut,
+        rut: normalisedRut,
         email: trimmedEmail,
         password,
         recaptchaToken,
@@ -118,10 +121,7 @@ function Register() {
         message: `Usuario ${user?.email || trimmedEmail} creado con éxito`,
         severity: "success",
       });
-      const target =
-        response?.redirectTo && response.redirectTo.trim().length > 0
-          ? response.redirectTo
-          : "/dashboard";
+      const target = resolvePostAuthRedirect(response?.redirectTo, response?.user?.roles);
       localStorage.setItem("redirectTo", target);
       setTimeout(() => navigate(target, { replace: true }), 900);
     } catch (error: unknown) {
@@ -237,11 +237,11 @@ function Register() {
               size="small"
               fullWidth
               value={rut}
-              onChange={(e) => setRut(e.target.value.replace(/k/g, "K"))}
+              onChange={(e) => setRut(sanitiseRutInput(e.target.value))}
               error={rut.trim().length > 0 && !isValidRut(rut)}
               helperText={
                 rut.trim().length > 0 && !isValidRut(rut)
-                  ? "Formato válido: 12.345.678-9 o 12345678-9"
+                  ? "Formato requerido: 12.345.678-9"
                   : " "
               }
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}

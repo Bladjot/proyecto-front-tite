@@ -10,23 +10,39 @@ import {
   IconButton,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import React, { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getStoredUserRoles } from "../../utils/auth";
+
+type MenuOption = {
+  label: string;
+  path: string;
+};
 
 function Home() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const roles = useMemo(() => getStoredUserRoles(), []);
+  const isAdmin = roles.includes("admin");
+
+  const menuOptions = useMemo<MenuOption[]>(() => {
+    const baseOptions: MenuOption[] = [
+      { label: "Inicio", path: "/dashboard" },
+      { label: "Perfil", path: "/perfil" },
+      { label: "Vendedor", path: "/vendedor" },
+    ];
+
+    if (isAdmin) {
+      baseOptions.push({ label: "Panel administrador", path: "/admin" });
+    }
+
+    return baseOptions;
+  }, [isAdmin]);
 
   // 👇 Función para manejar clicks del menú
-  const handleMenuClick = (option: string) => {
+  const handleMenuClick = (option: MenuOption) => {
     setOpen(false); // cerrar el drawer
-    if (option === "Perfil") {
-      navigate("/perfil");
-    } else if (option === "Vendedor") {
-      navigate("/vendedor");
-    } else {
-      console.log(`Opción ${option} en construcción`);
-    }
+    navigate(option.path);
   };
 
   const handleLogout = () => {
@@ -52,10 +68,10 @@ function Home() {
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <Box sx={{ width: 200, bgcolor: "#d9fbe0", height: "100%" }}>
           <List sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            {["Perfil", "Vendedor", "X", "X"].map((text, index) => (
-              <ListItem key={index} disablePadding>
-                <ListItemButton onClick={() => handleMenuClick(text)}>
-                  <ListItemText primary={text} />
+            {menuOptions.map((option) => (
+              <ListItem key={option.path} disablePadding>
+                <ListItemButton onClick={() => handleMenuClick(option)}>
+                  <ListItemText primary={option.label} />
                 </ListItemButton>
               </ListItem>
             ))}
