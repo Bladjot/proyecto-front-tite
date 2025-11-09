@@ -9,10 +9,12 @@ import {
   ListItemText,
   IconButton,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStoredUserRoles } from "../../utils/auth";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
+import BrandLogo from "../../components/BrandLogo";
 
 type MenuOption = {
   label: string;
@@ -55,14 +57,9 @@ function Home() {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", bgcolor: "background.default" }}>
-      {/* Botón menú hamburguesa (arriba derecha) */}
-      <IconButton
-        onClick={() => setOpen(true)}
-        sx={{ position: "absolute", top: 20, right: 20 }}
-      >
-        <MenuIcon />
-      </IconButton>
+    <div className="flex flex-col min-h-screen bg-[#f5f7fa]">
+      <TopBar onMenuClick={() => setOpen(true)} />
+      <div className="flex-1 flex flex-col items-center justify-center">
 
       {/* Drawer lateral derecho */}
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
@@ -97,15 +94,20 @@ function Home() {
           width: 300,
           height: 200,
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
+          gap: 1.5,
         }}
       >
+        <BrandLogo height={64} />
         <Typography variant="h6">En construcción...</Typography>
       </Paper>
+      </div>
+      <BottomBar />
 
       
-    </Box>
+    </div>
   );
 }
 

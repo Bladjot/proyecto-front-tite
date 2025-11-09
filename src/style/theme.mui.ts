@@ -10,22 +10,22 @@ declare module "@mui/material/Button" {
 
 const theme = createTheme({
   palette: {
-    // Verde de la barra superior
+    // Verde principal (revertido al definido originalmente)
     primary: {
-      main: "#2BBF5C", // verde vibrante principal
-      light: "#4CD47A", // más claro (hover, etc.)
-      dark: "#259B4C",  // más oscuro
+      main: "#10b981",
+      light: "#34d399",
+      dark: "#059669",
       contrastText: "#ffffff",
     },
-    // Verde del botón principal (puedes mantenerlo igual al primary)
+    // Mismo tono para secondary como al inicio
     secondary: {
-      main: "#2BBF5C",
-      light: "#4CD47A",
-      dark: "#259B4C",
+      main: "#10b981",
+      light: "#34d399",
+      dark: "#059669",
       contrastText: "#ffffff",
     },
     background: {
-      default: "#F1FFF4", // fondo claro tipo registro
+      default: "#f5f7fa",
     },
   },
   typography: {
@@ -36,10 +36,17 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-           borderRadius: "10px",
+          borderRadius: "10px",
           padding: "10px 16px",
           height: "45px",
           textTransform: "none",
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        rounded: {
+          borderRadius: 8,
         },
       },
     },

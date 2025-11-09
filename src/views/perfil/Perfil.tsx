@@ -16,6 +16,8 @@ import { useNavigate } from "react-router-dom";
 import { userService } from "../../db/services/userService";
 import { resolvePublicApiUrl } from "../../utils/media";
 import { buildPreferencesObjectFromText, parsePreferencesText } from "../../utils/preferences";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -282,7 +284,15 @@ function Perfil() {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "row", minHeight: "100vh", bgcolor: "background.default" }}>
+    <div className="flex flex-col min-h-screen bg-[#f5f7fa]">
+      <TopBar
+        rightSlot={
+          <Button variant="outlined" color="inherit" onClick={() => navigate("/home")} sx={{ textTransform: "none" }}>
+            Menú principal
+          </Button>
+        }
+      />
+      <div className="flex flex-row flex-1">
       {/* Sidebar lateral izquierdo */}
       <Box
         sx={{
@@ -298,15 +308,7 @@ function Perfil() {
           <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, textAlign: "center" }}>
             Configuraciones
           </Typography>
-          <Button
-            variant="contained"
-            size="small"
-            sx={{ mb: 2 }}
-            onClick={() => navigate("/home")}
-            fullWidth
-          >
-            Menú principal
-          </Button>
+          {/* Menú principal ahora está en la TopBar */}
           <List>
             {["Perfil", "Vendedor", "X", "X"].map((text, index) => (
               <React.Fragment key={index}>
@@ -443,7 +445,7 @@ function Perfil() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
-          <Button variant="contained" sx={{ mt: 2 }} onClick={handleSaveProfile}>
+          <Button variant="contained" color="primary" sx={{ mt: 2, textTransform: "none", fontWeight: 600, py: 1.1 }} onClick={handleSaveProfile}>
             Guardar Cambios
           </Button>
         </Paper>
@@ -494,7 +496,7 @@ function Perfil() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <Button variant="contained" sx={{ mt: 2 }} onClick={handleSaveAccount}>
+          <Button variant="contained" color="primary" sx={{ mt: 2, textTransform: "none", fontWeight: 600, py: 1.1 }} onClick={handleSaveAccount}>
             Guardar Cambios
           </Button>
         </Paper>
@@ -515,14 +517,17 @@ function Perfil() {
           />
           <Button
             variant="contained"
-            sx={{ mt: 2 }}
+            color="primary"
+            sx={{ mt: 2, textTransform: "none", fontWeight: 600, py: 1.1 }}
             onClick={handleSavePreferences}
           >
             Guardar Preferencias
           </Button>
         </Paper>
       </Box>
-    </Box>
+      </div>
+      <BottomBar />
+    </div>
   );
 }
 

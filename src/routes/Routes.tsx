@@ -22,17 +22,8 @@ const ResetPass = Loadable(
 );
 const AdminUsers = Loadable(lazy(() => import("../views/admin/AdminUsers")));
 
-// 👇 Perfil y subrutas
+// 👇 Perfil (solo vista principal)
 const Perfil = Loadable(lazy(() => import("../views/perfil/Perfil")));
-const ModificarPerfil = Loadable(
-  lazy(() => import("../views/perfil/ModificarPerfil"))
-);
-const DatosCuenta = Loadable(
-  lazy(() => import("../views/perfil/DatosCuenta"))
-);
-const Preferencias = Loadable(
-  lazy(() => import("../views/perfil/Preferencias"))
-);
 
 const Vendedor = Loadable(lazy(() => import("../views/vendedor/Vendedor")));
 const AcreditarVendedor = Loadable(
@@ -68,12 +59,7 @@ const Router = [
   },
   {
     path: "/perfil",
-    children: [
-      { path: "", element: <Perfil /> }, // Perfil principal
-      { path: "modificar", element: <ModificarPerfil /> },
-      { path: "cuenta", element: <DatosCuenta /> },
-      { path: "preferencias", element: <Preferencias /> },
-    ],
+    element: <Perfil />,
   },
   {
     path: "/vendedor",

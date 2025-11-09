@@ -13,6 +13,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../db/services/userService";
 import { isRutFormatValid, sanitiseRutInput } from "../../utils/rut";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
 
 function AcreditarVendedor() {
   const navigate = useNavigate();
@@ -72,12 +74,17 @@ function AcreditarVendedor() {
         minHeight: "100vh",
         bgcolor: "#f5f5f5",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        px: 2,
-        py: 6,
+        flexDirection: "column",
       }}
     >
+      <TopBar
+        rightSlot={
+          <Button variant="outlined" color="inherit" onClick={() => navigate("/dashboard", { replace: true })} sx={{ textTransform: "none" }}>
+            Volver al menú
+          </Button>
+        }
+      />
+      <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", px: 2, py: 6 }}>
       <Paper
         sx={{
           width: "100%",
@@ -151,6 +158,8 @@ function AcreditarVendedor() {
           </Stack>
         </Stack>
       </Paper>
+      </Box>
+      <BottomBar />
     </Box>
   );
 }

@@ -3,7 +3,7 @@
  */
 
 import { Avatar, Box, Typography } from "@mui/material";
-import logo from "../../../assets/EII_logo.png";
+import BrandLogo from "../../../components/BrandLogo";
 import DrawerNav from "./DrawerNav";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -198,16 +198,9 @@ function HeaderGPI({ isMobile = false }: HeaderGPIProps) {
                 gap="16px"
                 className="flex flex-col justify-center items-center"
               >
-                <img alt="logo" className="h-30 invert" src={logo} />
-                <Typography
-                  fontSize={22}
-                  lineHeight={"32px"}
-                  letterSpacing={"-0.3px"}
-                  fontWeight={600}
-                  color="#ebebeb"
-                >
-                  GPI project
-                </Typography>
+                <Box sx={{ filter: "invert(1)" }}>
+                  <BrandLogo height={120} />
+                </Box>
               </Box>
               <Box className="flex flex-col pt-16 p-6 gap-6 w-full">
                 {actionsMenu.map((item, index) => (

@@ -516,4 +516,17 @@ Modifica el archivo `src/style/theme.mui.ts` para cambiar colores, tipografía y
 
 ---
 
+
+Rutas para react:
+/home
+/dashboard
+/admin
+/auth/login
+/auth/register
+/auth/forgot-password
+/perfil (vista principal de perfil)
+/vendedor
+/vendedor/acreditacion
+/error/404
+
 Desarrollado para la asignatura de Gestión de Proyecto Informático - Diego Monsalves - René Noël - Universidad de Valparaíso

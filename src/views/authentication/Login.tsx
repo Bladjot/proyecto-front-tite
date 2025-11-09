@@ -1,21 +1,4 @@
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Button,
-  IconButton,
-  Typography,
-  TextField,
-  CircularProgress,
-  Divider,
-  Paper,
-  InputBase,
-  Snackbar,
-  Alert,
-  InputAdornment,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box, Button, Typography, TextField, CircularProgress, Divider, Paper, Snackbar, Alert, InputAdornment, IconButton } from "@mui/material";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { isAxiosError } from "axios";
@@ -27,8 +10,9 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { resolvePostAuthRedirect } from "../../utils/auth";
 
 // IMPORTS DE LOGOS
-import brandLogo from "../../assets/brand/PulgaShop.jpg";
 import googleLogo from "../../assets/auth/google.png";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Login() {
@@ -110,48 +94,17 @@ function Login() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      {/* BARRA SUPERIOR */}
-      <AppBar position="static" elevation={0} color="primary">
-        <Toolbar sx={{ gap: 2 }}>
-          {/* ⬇️ Reemplazamos por logo PulgaShop */}
-          <Box
-            component="img"
-            src={brandLogo}
-            alt="PulgaShop"
-            sx={{ height: 50, borderRadius: 1, bgcolor: "white", p: 0.5 }}
-          />
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: { xs: "100%", sm: 520 },
-                bgcolor: "white",
-                borderRadius: 1.5,
-                px: 1,
-                py: 0.25,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <SearchIcon fontSize="small" />
-              <InputBase placeholder="Buscar..." sx={{ flex: 1, fontSize: 14 }} />
-            </Box>
-          </Box>
-          <IconButton edge="end" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <TopBar logoClickable={false} />
 
       {/* CONTENIDO */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "center",
-          alignItems: "flex-start",
-          minHeight: "calc(100vh - 64px)",
-          pt: { xs: 6, sm: 10 },
+          alignItems: "center",
+          flex: 1,
+          py: { xs: 2, sm: 4 },
         }}
       >
         <Paper
@@ -256,12 +209,14 @@ function Login() {
                 Falta la clave VITE_RECAPTCHA_SITE_KEY en el .env
               </Alert>
             ) : (
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={RECAPTCHA_SITE_KEY}
-                onChange={(token) => setRecaptchaToken(token)}
-                onExpired={() => setRecaptchaToken(null)}
-              />
+              <Box sx={{ transform: { xs: 'scale(0.9)', sm: 'none' }, transformOrigin: 'center' }}>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={RECAPTCHA_SITE_KEY}
+                  onChange={(token) => setRecaptchaToken(token)}
+                  onExpired={() => setRecaptchaToken(null)}
+                />
+              </Box>
             )}
           </Box>
 
@@ -331,14 +286,7 @@ function Login() {
           {snack.message}
         </Alert>
       </Snackbar>
-
-      {/* Accesibilidad */}
-      <Box sx={{ position: "fixed", left: 16, bottom: 16, fontSize: 14, color: "text.secondary" }}>
-        🔊 Modo lectura
-      </Box>
-      <Box sx={{ position: "fixed", right: 16, bottom: 16, fontSize: 14, color: "text.secondary" }}>
-        Daltonismo ⭕
-      </Box>
+      <BottomBar />
     </Box>
   );
 }

@@ -1,24 +1,4 @@
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Button,
-  IconButton,
-  Typography,
-  TextField,
-  Divider,
-  Paper,
-  InputBase,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  InputAdornment,
-  Link,
-  Checkbox,
-  FormControlLabel,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box, Button, IconButton, Typography, TextField, Divider, Paper, Snackbar, Alert, CircularProgress, InputAdornment, Link, Checkbox, FormControlLabel } from "@mui/material";
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { isAxiosError } from "axios";
@@ -30,8 +10,9 @@ import { resolvePostAuthRedirect } from "../../utils/auth";
 // Importar Recaptcha
 import ReCAPTCHA from "react-google-recaptcha";
 // ⬇️ NUEVOS LOGOS
-import brandLogo from "../../assets/brand/PulgaShop.jpg";
 import googleLogo from "../../assets/auth/google.png";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Register() {
@@ -145,57 +126,17 @@ function Register() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", overflowX: "hidden" }}>
-      {/* Barra superior */}
-      <AppBar position="static" elevation={0} color="primary">
-        <Toolbar sx={{ gap: 2 }}>
-          {/* ⬇️ Logo PulgaShop más grande (50px) */}
-          <Box
-            component="img"
-            src={brandLogo}
-            alt="PulgaShop"
-            sx={{ height: 50, borderRadius: 1, bgcolor: "white", p: 0.5 }}
-          />
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: { xs: "92%", sm: 520 },
-                bgcolor: "white",
-                borderRadius: 1.5,
-                px: 1,
-                py: 0.25,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <SearchIcon fontSize="small" />
-              <InputBase placeholder="Buscar..." sx={{ flex: 1, fontSize: 14 }} />
-            </Box>
-          </Box>
-          <IconButton edge="end" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
+      <TopBar logoClickable={false} />
 
       {/* Contenido */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          minHeight: "calc(100vh - 64px)",
-          pt: { xs: 4, sm: 6 },
-          pb: { xs: 4, sm: 6 },
-        }}
-      >
+      <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", py: 2 }}>
         <Paper
           elevation={2}
           sx={{
             width: "100%",
             maxWidth: 520,
-            p: { xs: 2.5, sm: 2.3 },
+            p: { xs: 2, sm: 2 },
             borderRadius: 2,
             border: "1px solid rgba(0,0,0,0.25)",
           }}
@@ -229,7 +170,7 @@ function Register() {
           <Divider sx={{ my: 1.5 }} />
 
           {/* Inputs con espaciado uniforme */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <TextField
               label="RUT"
               placeholder="12.345.678-9"
@@ -337,7 +278,7 @@ function Register() {
             />
           </Box>
           {/* ReCAPTCHA */}
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 0.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1.5, mb: 0.5 }}>
             {!RECAPTCHA_SITE_KEY ? (
               <Alert severity="error" sx={{ width: '100%' }}>
                 Falta la clave VITE_RECAPTCHA_SITE_KEY en el .env
@@ -402,6 +343,7 @@ function Register() {
           {snack.message}
         </Alert>
       </Snackbar>
+      <BottomBar />
     </Box>
   );
 }

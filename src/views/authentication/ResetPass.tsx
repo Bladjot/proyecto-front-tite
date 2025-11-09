@@ -1,23 +1,12 @@
-import {
-  AppBar,
-  Toolbar,
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
-  InputBase,
-  Snackbar,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
+import { AppBar, Toolbar, Box, Paper, Typography, TextField, Button, IconButton, InputBase, Snackbar, Alert, CircularProgress } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import TopBar from "../../components/layout/TopBar";
+import BottomBar from "../../components/layout/BottomBar";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import brandLogo from "../../assets/brand/PulgaShop.jpg";
+import BrandLogo from "../../components/BrandLogo";
 import { authService } from "../../db/services/authService";
 
 function ResetPass() {
@@ -29,7 +18,6 @@ function ResetPass() {
     severity: "error" | "warning" | "success" | "info";
   }>({ open: false, message: "", severity: "info" });
   const [sent, setSent] = useState(false);
-
   const navigate = useNavigate();
 
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -55,7 +43,7 @@ function ResetPass() {
       if (error?.response?.status === 404) {
         setSnack({ open: true, message: "No existe un usuario con ese email", severity: "error" });
       } else {
-        setSnack({ open: true, message: "Error al enviar el correo", severity: "error" });
+        setSnack({ open: true, message: "No se pudo enviar el correo de recuperación", severity: "error" });
       }
     } finally {
       setLoading(false);
@@ -63,58 +51,17 @@ function ResetPass() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      {/* -------- BARRA SUPERIOR (igual a Login/Registro) -------- */}
-      <AppBar position="static" elevation={0} color="primary">
-        <Toolbar sx={{ gap: 2 }}>
-          {/* Logo en barra superior */}
-          <Box
-            component="img"
-            src={brandLogo}
-            alt="PulgaShop"
-            sx={{ height: 50, borderRadius: 1, bgcolor: "white", p: 0.5 }}
-          />
-
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <Box
-              sx={{
-                width: { xs: "92%", sm: 520 },
-                bgcolor: "white",
-                borderRadius: 1.5,
-                px: 1,
-                py: 0.25,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <SearchIcon fontSize="small" />
-              <InputBase placeholder="Buscar..." sx={{ flex: 1, fontSize: 14 }} />
-            </Box>
-          </Box>
-          <IconButton edge="end" color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+      <TopBar logoClickable={false} />
 
       {/* -------- CONTENIDO -------- */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          minHeight: "calc(100vh - 64px)",
-          pt: { xs: 6, sm: 25 },
-          pb: { xs: 6, sm: 10 },
-        }}
-      >
+      <Box sx={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", py: 2 }}>
         <Paper
           elevation={2}
           sx={{
             width: "100%",
             maxWidth: 460,
-            p: { xs: 3, sm: 3 },
+            p: { xs: 2.5, sm: 2.5 },
             borderRadius: 2,
             border: "1px solid rgba(0,0,0,0.25)",
             textAlign: "center",
@@ -122,7 +69,7 @@ function ResetPass() {
         >
           {/* Logo pequeño */}
           <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-            <Box component="img" src={brandLogo} alt="PulgaShop" sx={{ height: 50 }} />
+            <BrandLogo height={50} clickable={false} />
           </Box>
 
           <Typography variant="h6" className="h-inter" fontWeight={700} sx={{ mb: 1 }}>
@@ -221,6 +168,7 @@ function ResetPass() {
           {snack.message}
         </Alert>
       </Snackbar>
+      <BottomBar />
     </Box>
   );
 }

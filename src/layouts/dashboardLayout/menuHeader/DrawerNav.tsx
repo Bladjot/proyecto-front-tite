@@ -1,5 +1,5 @@
 import { Avatar, Box, Drawer, Typography } from "@mui/material";
-import logo from "../../../assets/EII_logo.png";
+import BrandLogo from "../../../components/BrandLogo";
 import { JSX } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -124,10 +124,9 @@ function DrawerNav({
           </Box>
         </div>
         <Box className="flex flex-col items-center p-4 gap-3">
-          <img
-            src={logo}
-            className="w-[60%] max-w-[380px]"
-          />
+          <Box className="w-[60%] max-w-[380px] flex justify-center">
+            <BrandLogo height={120} />
+          </Box>
           <p
             className=" text-md font-normal leading-6 cursor-pointer underline p-1 text-(--color-darkgreen)"
             onClick={() => {
