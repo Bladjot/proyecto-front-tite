@@ -11,9 +11,14 @@ import {
   Avatar,
   Paper,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../db/services/userService";
+import { resolvePublicApiUrl } from "../../utils/media";
+import { buildPreferencesObjectFromText, parsePreferencesText } from "../../utils/preferences";
+
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function Perfil() {
   const navigate = useNavigate();
@@ -21,13 +26,17 @@ function Perfil() {
 
   // Estado para secciones inline
   const [photo, setPhoto] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const photoFileRef = useRef<File | null>(null);
   const [bio, setBio] = useState("");
   const [currentBio, setCurrentBio] = useState("");
+  const [currentPhoto, setCurrentPhoto] = useState("");
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [preferencesText, setPreferencesText] = useState("");
@@ -48,21 +57,42 @@ function Perfil() {
 
     // Estados actuales (lo que viene del backend)
     setCurrentBio(String(resolvedBio || ""));
-    setCurrentPreferences(String(resolvedPrefs || ""));
+    const resolvedPrefsSource =
+      (userData as any)?.preferencias ??
+      (userData as any)?.preferences ??
+      resolvedPrefs;
+    const resolvedPrefsText = parsePreferencesText(resolvedPrefsSource);
+    setCurrentPreferences(resolvedPrefsText);
 
     // Estados de edición
-    setPhoto((userData as any).photo || "");
+    const resolvedPhoto = resolvePublicApiUrl((userData as any).photo);
+    if (!photoFileRef.current) {
+      setPhoto(resolvedPhoto);
+    }
+    setCurrentPhoto(resolvedPhoto);
+    setPhotoFile(null);
     setBio(String(resolvedBio || ""));
     setName((userData as any).name || "");
     setLastName((userData as any).lastName || "");
-    setEmail((userData as any).email || "");
-    setPhone((userData as any).phone || "");
-    setPreferencesText(String(resolvedPrefs || ""));
+    const resolvedEmail = (details as any)?.email ?? (userData as any)?.email ?? "";
+    setEmail(resolvedEmail);
+    const resolvedTelefono =
+      (details as any)?.telefono ??
+      (details as any)?.phone ??
+      (userData as any)?.telefono ??
+      (userData as any)?.phone ??
+      "";
+    setPhone(resolvedTelefono);
+    setPreferencesText(resolvedPrefsText);
   };
 
   useEffect(() => {
     refreshProfile().catch((err) => console.error("❌ Error cargando perfil:", err));
   }, []);
+
+  useEffect(() => {
+    photoFileRef.current = photoFile;
+  }, [photoFile]);
 
   // Auto-actualización periódica del panel de información actual (sin pisar campos en edición)
   useEffect(() => {
@@ -75,9 +105,19 @@ function Perfil() {
           ]);
           setUser(userData);
           const resolvedBio = (details as any)?.bio ?? (details as any)?.biografia ?? "";
-          const resolvedPrefs = (details as any)?.preferences ?? (details as any)?.preferencias ?? "";
+          const resolvedPrefs =
+            (userData as any)?.preferencias ??
+            (userData as any)?.preferences ??
+            (details as any)?.preferences ??
+            (details as any)?.preferencias ??
+            "";
           setCurrentBio(String(resolvedBio || ""));
-          setCurrentPreferences(String(resolvedPrefs || ""));
+          setCurrentPreferences(parsePreferencesText(resolvedPrefs));
+          const resolvedPhoto = resolvePublicApiUrl((userData as any).photo);
+          setCurrentPhoto(resolvedPhoto);
+          if (!photoFileRef.current) {
+            setPhoto(resolvedPhoto);
+          }
         } catch (e) {
           console.warn("⚠️ Auto-refresh de perfil falló:", e);
         }
@@ -95,17 +135,53 @@ function Perfil() {
   const handleSaveProfile = async () => {
     if (!user) return;
     try {
-      // 1) Guardar biografía y preferencias (acción principal, PATCH)
-      await userService.saveProfileDetails({ bio, preferences: preferencesText });
+      const preferencesPayload = buildPreferencesObjectFromText(preferencesText) ?? {};
+      const response = await userService.saveProfileDetails({
+        name,
+        lastName,
+        biografia: bio,
+        foto: photoFile,
+        preferencias: preferencesPayload,
+      });
 
-      // 2) Mejor esfuerzo para nombre/apellido (no hace fallar la acción principal)
-      if (user && user._id) {
-        try {
-          await userService.updateUser(user._id, { name, lastName });
-        } catch (e) {
-          console.warn("No se pudo actualizar nombre/apellido:", e);
-        }
+      const serverBio = (response as any)?.biografia;
+      if (typeof serverBio === "string") {
+        setCurrentBio(serverBio);
+        setBio(serverBio);
+      } else {
+        setCurrentBio(bio);
       }
+
+      const serverPhoto =
+        typeof (response as any)?.fotoUrl === "string"
+          ? String((response as any).fotoUrl)
+          : typeof (response as any)?.foto === "string"
+            ? resolvePublicApiUrl((response as any).foto)
+            : "";
+      if (serverPhoto) {
+        setPhoto(serverPhoto);
+        setCurrentPhoto(serverPhoto);
+      }
+
+      if (preferencesPayload) {
+        const prefsText = parsePreferencesText(preferencesPayload);
+        setCurrentPreferences(prefsText);
+        setPreferencesText(prefsText);
+      }
+
+      setPhotoFile(null);
+
+      setUser((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              name,
+              lastName,
+              ...(serverPhoto ? { photo: serverPhoto } : {}),
+              ...(preferencesPayload ? { preferencias: preferencesPayload } : {}),
+            }
+          : prev
+      );
 
       // Re-cargar para asegurar mostrar lo último guardado (desde backend)
       await refreshProfile();
@@ -113,7 +189,11 @@ function Perfil() {
       alert("✅ Perfil actualizado con éxito");
     } catch (err) {
       console.error("❌ Error al actualizar perfil:", err);
-      alert("❌ No se pudo actualizar el perfil");
+      if (err instanceof Error && err.message.includes("No hay cambios")) {
+        alert("⚠️ No hay cambios para guardar");
+      } else {
+        alert("❌ No se pudo actualizar el perfil");
+      }
     }
   };
 
@@ -123,14 +203,53 @@ function Perfil() {
       alert("⚠️ Las contraseñas no coinciden");
       return;
     }
+    if (password && password.length < 6) {
+      alert("⚠️ La nueva contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    if (password && !currentPasswordInput) {
+      alert("⚠️ Debes ingresar tu contraseña actual para cambiarla");
+      return;
+    }
     try {
-      const updated = await userService.updateUser(user._id, {
+      const response = await userService.saveProfileDetails({
         email,
-        phone,
-        ...(password ? { password } : {}),
+        telefono: phone,
+        ...(password
+          ? {
+              currentPassword: currentPasswordInput,
+              newPassword: password,
+            }
+          : {}),
       });
+      const responseEmail = typeof (response as any)?.email === "string" ? String((response as any).email) : null;
+      const responsePhone =
+        typeof (response as any)?.telefono === "string"
+          ? String((response as any).telefono)
+          : typeof (response as any)?.phone === "string"
+            ? String((response as any).phone)
+            : null;
+
+      if (responseEmail) {
+        setEmail(responseEmail);
+      }
+      if (responsePhone) {
+        setPhone(responsePhone);
+      }
+      setUser((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              ...(responseEmail ? { email: responseEmail } : {}),
+              ...(responsePhone ? { phone: responsePhone, telefono: responsePhone } : {}),
+            }
+          : prev
+      );
       alert("✅ Datos de cuenta actualizados con éxito");
-      setUser(updated);
+      await refreshProfile();
+      if (password) {
+        setCurrentPasswordInput("");
+      }
       setPassword("");
       setConfirmPassword("");
     } catch (err) {
@@ -142,12 +261,23 @@ function Perfil() {
   const handleSavePreferences = async () => {
     if (!user) return;
     try {
-      await userService.saveProfileDetails({ preferences: preferencesText });
+      const preferencesPayload = buildPreferencesObjectFromText(preferencesText) ?? {};
+      await userService.saveProfileDetails({
+        preferencias: preferencesPayload,
+      });
+      const prefsText = parsePreferencesText(preferencesPayload);
+      setCurrentPreferences(prefsText);
+      setPreferencesText(prefsText);
+      setUser((prev: any) => (prev ? { ...prev, preferencias: preferencesPayload } : prev));
       await refreshProfile();
       alert("✅ Preferencias guardadas con éxito");
     } catch (err) {
       console.error("❌ Error al guardar preferencias:", err);
-      alert("❌ No se pudieron guardar las preferencias");
+      if (err instanceof Error && err.message.includes("No hay cambios")) {
+        alert("⚠️ No hay cambios para guardar");
+      } else {
+        alert("❌ No se pudieron guardar las preferencias");
+      }
     }
   };
 
@@ -213,20 +343,9 @@ function Perfil() {
             maxWidth: 900,
           }}
         >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              bgcolor: "#e0e0e0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 40,
-            }}
-          >
+          <Avatar src={currentPhoto || undefined} sx={{ width: 80, height: 80, fontSize: 36 }}>
             🙂
-          </Box>
+          </Avatar>
           <Box>
             <Typography variant="h6" fontWeight="bold">
               {user ? `${user.name} ${user.lastName}` : "Cargando..."}
@@ -240,22 +359,22 @@ function Perfil() {
         <Divider sx={{ width: "100%", maxWidth: 900 }} />
 
         {/* Información actual: Bio y Preferencias (siempre desde backend) */}
-        <Paper sx={{ p: 3, width: "100%", maxWidth: 900 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Información actual
-          </Typography>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 3,
-            }}
-          >
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
-                Biografía
-              </Typography>
-              <Typography sx={{ whiteSpace: "pre-wrap" }}>
+      <Paper sx={{ p: 3, width: "100%", maxWidth: 900 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Información actual
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Biografía
+            </Typography>
+            <Typography sx={{ whiteSpace: "pre-wrap" }}>
                 {currentBio?.trim() ? currentBio : "Sin información"}
               </Typography>
             </Box>
@@ -276,22 +395,31 @@ function Perfil() {
             Modificar perfil
           </Typography>
           <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 2 }}>
-            <Avatar src={photo} sx={{ width: 72, height: 72 }} />
-            <Button variant="outlined" component="label">
-              Subir nueva foto
-              <input
-                hidden
-                accept="image/*"
-                type="file"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    const file = e.target.files[0];
-                    setPhoto(URL.createObjectURL(file));
+          <Avatar src={photo} sx={{ width: 72, height: 72 }} />
+          <Button variant="outlined" component="label">
+            Subir nueva foto
+            <input
+              hidden
+              accept="image/png, image/jpeg, image/webp"
+              type="file"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  const file = e.target.files[0];
+                  if (file.size > MAX_PHOTO_SIZE) {
+                    alert("⚠️ La imagen debe pesar máximo 2MB");
+                    return;
                   }
-                }}
-              />
-            </Button>
-          </Box>
+                  if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
+                    alert("⚠️ Formato no soportado. Usa JPG, PNG o WebP");
+                    return;
+                  }
+                  setPhoto(URL.createObjectURL(file));
+                  setPhotoFile(file);
+                }
+              }}
+            />
+          </Button>
+        </Box>
           <TextField
             label="Nombre"
             fullWidth
@@ -333,19 +461,28 @@ function Perfil() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <TextField
-            label="Teléfono"
-            type="tel"
-            fullWidth
-            margin="normal"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-          <TextField
-            label="Nueva contraseña"
-            type="password"
-            fullWidth
-            margin="normal"
+        <TextField
+          label="Teléfono"
+          type="tel"
+          fullWidth
+          margin="normal"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+        <TextField
+          label="Contraseña actual"
+          type="password"
+          fullWidth
+          margin="normal"
+          value={currentPasswordInput}
+          onChange={(e) => setCurrentPasswordInput(e.target.value)}
+          helperText="Requerida solo si deseas cambiar tu contraseña"
+        />
+        <TextField
+          label="Nueva contraseña"
+          type="password"
+          fullWidth
+          margin="normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />

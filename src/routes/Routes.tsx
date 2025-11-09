@@ -35,6 +35,9 @@ const Preferencias = Loadable(
 );
 
 const Vendedor = Loadable(lazy(() => import("../views/vendedor/Vendedor")));
+const AcreditarVendedor = Loadable(
+  lazy(() => import("../views/vendedor/AcreditarVendedor"))
+);
 
 /* ****End Pages***** */
 
@@ -74,7 +77,10 @@ const Router = [
   },
   {
     path: "/vendedor",
-    element: <Vendedor />,
+    children: [
+      { path: "", element: <Vendedor /> },
+      { path: "acreditacion", element: <AcreditarVendedor /> },
+    ],
   },
   {
     path: "/admin",

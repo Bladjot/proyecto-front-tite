@@ -1,6 +1,7 @@
 import { Box, Typography, TextField, Button } from "@mui/material";
 import { useEffect, useState } from "react";
 import { userService } from "../../db/services/userService";
+import { buildPreferencesObjectFromText, parsePreferencesText } from "../../utils/preferences";
 
 function Preferencias() {
   const [value, setValue] = useState("");
@@ -8,8 +9,9 @@ function Preferencias() {
   useEffect(() => {
     const load = async () => {
       try {
-        const details = await userService.getProfileDetails();
-        setValue((details as any)?.preferences || (details as any)?.preferencias || "");
+        const profile = await userService.getProfile();
+        const rawPreferences = (profile as any)?.preferencias ?? (profile as any)?.preferences;
+        setValue(parsePreferencesText(rawPreferences));
       } catch {
         setValue("");
       }
@@ -19,11 +21,17 @@ function Preferencias() {
 
   const handleSave = async () => {
     try {
-      await userService.saveProfileDetails({ preferences: value });
+      const preferencesPayload = buildPreferencesObjectFromText(value) ?? {};
+      await userService.saveProfileDetails({ preferencias: preferencesPayload });
+      setValue(parsePreferencesText(preferencesPayload));
       alert("✅ Preferencias guardadas con éxito");
     } catch (err) {
       console.error("❌ Error al guardar preferencias:", err);
-      alert("❌ No se pudieron guardar las preferencias");
+      if (err instanceof Error && err.message.includes("No hay cambios")) {
+        alert("⚠️ No hay cambios para guardar");
+      } else {
+        alert("❌ No se pudieron guardar las preferencias");
+      }
     }
   };
 

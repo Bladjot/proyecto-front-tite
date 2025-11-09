@@ -100,6 +100,21 @@ const toFormState = (user: UserRecord): UserFormState => ({
   password: "",
 });
 
+type VendorAccreditationRequest = {
+  id?: string;
+  _id?: string;
+  userId?: string;
+  storeName?: string;
+  contactNumber?: string;
+  companyRut?: string;
+  status?: string;
+  applicant?: {
+    name?: string;
+    lastName?: string;
+    email?: string;
+  };
+};
+
 function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -111,6 +126,9 @@ function AdminUsers() {
   const [snack, setSnack] = useState<SnackbarState>(defaultSnackState);
   const [roleCatalog, setRoleCatalog] = useState<RoleRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [vendorRequests, setVendorRequests] = useState<VendorAccreditationRequest[]>([]);
+  const [vendorRequestsLoading, setVendorRequestsLoading] = useState(false);
+  const [vendorRequestsError, setVendorRequestsError] = useState<string | null>(null);
 
   const currentUserIsAdmin = useMemo(() => {
     try {
@@ -182,6 +200,57 @@ function AdminUsers() {
 
     fetchRoles();
   }, [currentUserIsAdmin]);
+
+  useEffect(() => {
+    if (!currentUserIsAdmin) return;
+    const fetchVendorRequests = async () => {
+      try {
+        setVendorRequestsLoading(true);
+        setVendorRequestsError(null);
+        const requests = await userService.getVendorAccreditations();
+        setVendorRequests(requests);
+      } catch (cause: unknown) {
+        console.error("[admin] Error al obtener solicitudes de acreditación:", cause);
+        const message =
+          isAxiosError(cause) && cause.response?.data?.message
+            ? String(cause.response.data.message)
+            : cause instanceof Error
+            ? cause.message
+            : "No se pudieron obtener las solicitudes de acreditación";
+        setVendorRequestsError(message);
+      } finally {
+        setVendorRequestsLoading(false);
+      }
+    };
+
+    fetchVendorRequests();
+    const interval = setInterval(fetchVendorRequests, 10000);
+    return () => clearInterval(interval);
+  }, [currentUserIsAdmin]);
+
+  const handleDeleteVendorRequest = async (id?: string) => {
+    if (!id) return;
+    const confirmed = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
+    if (!confirmed) return;
+    try {
+      await userService.deleteVendorAccreditation(id);
+      setVendorRequests((prev) => prev.filter((request) => request.id !== id));
+      showSnack("Solicitud eliminada", "success");
+    } catch (cause: unknown) {
+      console.error("[admin] Error al eliminar solicitud:", cause);
+      if (isAxiosError(cause) && cause.response?.status === 404) {
+        showSnack("Solicitud no encontrada", "warning");
+      } else {
+        const message =
+          isAxiosError(cause) && cause.response?.data?.message
+            ? String(cause.response.data.message)
+            : cause instanceof Error
+            ? cause.message
+            : "No se pudo eliminar la solicitud";
+        showSnack(message, "error");
+      }
+    }
+  };
 
   const availableRoles = useMemo(() => {
     const roleSet = new Set(FALLBACK_ROLES);
@@ -587,6 +656,88 @@ function AdminUsers() {
           {snack.message}
         </Alert>
       </Snackbar>
+
+      <Paper elevation={1} sx={{ mt: 4, p: 3 }}>
+        <Typography variant="h6" fontWeight={600} gutterBottom>
+          Solicitudes de verificación de cuenta
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Revisa los datos entregados por quienes desean vender en la plataforma y valida su
+          información antes de aprobarlos.
+        </Typography>
+        {vendorRequestsLoading ? (
+          <Stack alignItems="center" py={3}>
+            <CircularProgress size={28} />
+          </Stack>
+        ) : vendorRequestsError ? (
+          <Alert severity="error">{vendorRequestsError}</Alert>
+        ) : vendorRequests.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            No hay solicitudes pendientes.
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {vendorRequests.map((request, index) => (
+              <Box
+                key={request.id || index}
+                sx={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 2,
+                  p: 2,
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: "space-between",
+                  gap: 1,
+                }}
+              >
+                <Box>
+                  <Typography fontWeight={600}>
+                    {request.applicant?.name} {request.applicant?.lastName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {request.applicant?.email || "Sin correo asignado"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Estado: {request.status ?? "pending"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Usuario solicitante: {request.userId || "N/D"}
+                  </Typography>
+                </Box>
+                <Stack spacing={0.5} flex={1}>
+                  <Typography variant="body2">
+                    <Box component="span" fontWeight={600}>
+                      Nombre de tienda:
+                    </Box>{" "}
+                    {request.storeName || "—"}
+                  </Typography>
+                  <Typography variant="body2">
+                    <Box component="span" fontWeight={600}>
+                      Número de contacto:
+                    </Box>{" "}
+                    {request.contactNumber || "—"}
+                  </Typography>
+                  <Typography variant="body2">
+                    <Box component="span" fontWeight={600}>
+                      RUT empresa:
+                    </Box>{" "}
+                    {request.companyRut || "—"}
+                  </Typography>
+                </Stack>
+                <Stack spacing={1} direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleDeleteVendorRequest(request.id || request._id)}
+                  >
+                    Eliminar
+                  </Button>
+                </Stack>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Paper>
     </Box>
   );
 }

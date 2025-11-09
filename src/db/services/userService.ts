@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { isAxiosError } from "axios";
 import { api } from "../config/api";
 import { normaliseRut } from "../../utils/rut";
+import { resolvePublicApiUrl } from "../../utils/media";
+import { serializePreferencesValue } from "../../utils/preferences";
 
 export type RawUser = {
   id?: string;
@@ -10,7 +12,11 @@ export type RawUser = {
   name?: string;
   lastName?: string;
   email?: string;
+  telefono?: string;
   rut?: string;
+  phone?: string;
+  photo?: string;
+  bio?: string;
   roles?: string[];
   permisos?: string[];
 };
@@ -127,6 +133,30 @@ export const mapUserRecord = (raw: RawUser): UserRecord => ({
   permisos: Array.isArray(raw.permisos) ? raw.permisos : [],
 });
 
+const persistStoredUserPhoto = (relativePhoto: string) => {
+  try {
+    const stored = localStorage.getItem("user");
+    if (!stored) return;
+    const parsed = JSON.parse(stored) as Record<string, unknown>;
+    const updated = { ...parsed, photo: relativePhoto };
+    localStorage.setItem("user", JSON.stringify(updated));
+  } catch (error) {
+    console.warn("[userService] No se pudo actualizar la foto en localStorage", error);
+  }
+};
+
+const enrichProfileDetailsResponse = (payload: Record<string, unknown>) => {
+  const responsePhoto = typeof (payload as any)?.foto === "string" ? String((payload as any).foto) : "";
+  if (responsePhoto) {
+    persistStoredUserPhoto(responsePhoto);
+    return {
+      ...payload,
+      fotoUrl: resolvePublicApiUrl(responsePhoto),
+    };
+  }
+  return payload;
+};
+
 export const userService = {
   // Crear usuario (registro normal o por admin)
   createUser: async (userData: Record<string, unknown>) => {
@@ -180,14 +210,63 @@ export const userService = {
     return response.data;
   },
 
-  // Guardar detalles de perfil (bio, preferencias) del usuario autenticado
-  saveProfileDetails: async (details: { bio?: string; preferences?: string }) => {
-    const response = await api.patch<Record<string, unknown>>(
-      "/auth/profile-details",
-      { bio: details.bio, preferences: details.preferences },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
+  // Guardar detalles de perfil (nombre, apellido, biografía, preferencias) del usuario autenticado
+  saveProfileDetails: async (details: {
+    name?: string | null;
+    lastName?: string | null;
+    biografia?: string | null;
+    bio?: string | null;
+    preferencias?: unknown;
+    preferences?: unknown;
+    email?: string | null;
+    telefono?: string | null;
+    phone?: string | null;
+    currentPassword?: string | null;
+    newPassword?: string | null;
+    foto?: File | Blob | null;
+  }) => {
+    const sanitizeField = (value?: string | null) => {
+      if (value === undefined || value === null) return undefined;
+      const stringValue = String(value);
+      const trimmed = stringValue.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    };
+
+    const formData = new FormData();
+    let hasChanges = false;
+
+    const appendIfPresent = (key: string, value?: string) => {
+      if (value !== undefined) {
+        formData.append(key, value);
+        hasChanges = true;
+      }
+    };
+
+    appendIfPresent("name", sanitizeField(details.name));
+    appendIfPresent("lastName", sanitizeField(details.lastName));
+    appendIfPresent("biografia", sanitizeField(details.biografia ?? details.bio));
+    appendIfPresent("email", sanitizeField(details.email));
+    appendIfPresent("telefono", sanitizeField(details.telefono ?? details.phone));
+
+    const preferenciasValue = serializePreferencesValue(details.preferencias ?? details.preferences);
+    appendIfPresent("preferencias", preferenciasValue);
+
+    appendIfPresent("currentPassword", sanitizeField(details.currentPassword));
+    appendIfPresent("newPassword", sanitizeField(details.newPassword));
+
+    if (details.foto instanceof File || details.foto instanceof Blob) {
+      formData.append("foto", details.foto);
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      throw new Error("No hay cambios para guardar en el perfil");
+    }
+
+    const response = await api.patch<Record<string, unknown>>("/auth/profile-details", formData, {
+      headers: getAuthHeaders(),
+    });
+    return enrichProfileDetailsResponse(response.data || {});
   },
 
   // Listar todos los usuarios (solo admins)
@@ -201,6 +280,39 @@ export const userService = {
   // Eliminar usuario (solo admins)
   deleteUser: async (id: string) => {
     await api.delete(`/users/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  // Enviar solicitud de acreditación como vendedor
+  createVendorAccreditation: async (payload: {
+    storeName: string;
+    contactNumber: string;
+    companyRut: string;
+  }) => {
+    const response = await api.post(
+      "/vendor-accreditations",
+      {
+        storeName: payload.storeName,
+        contactNumber: payload.contactNumber,
+        companyRut: payload.companyRut,
+      },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  },
+
+  // Listar solicitudes de acreditación (solo admins)
+  getVendorAccreditations: async () => {
+    const response = await api.get("/vendor-accreditations", {
+      headers: getAuthHeaders(),
+    });
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  // Eliminar solicitud de acreditación (solo admins)
+  deleteVendorAccreditation: async (id: string) => {
+    await api.delete(`/vendor-accreditations/${id}`, {
       headers: getAuthHeaders(),
     });
   },
