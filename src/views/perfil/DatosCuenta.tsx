@@ -4,7 +4,7 @@ import {
     TextField,
     Button,
   } from "@mui/material";
-  import { useState, useEffect } from "react";
+  import { useState, useEffect, useMemo } from "react";
   import { userService } from "../../db/services/userService";
   
   function DatosCuenta() {
@@ -13,10 +13,35 @@ import {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
+    // Demo sin backend para /perfil/cuenta
+    const isDemoMode = useMemo(() => {
+      try {
+        const noToken = !localStorage.getItem("token");
+        const qs = typeof window !== "undefined" ? window.location.search : "";
+        const queryFlag = qs.includes("demoPerfil=true") || qs.includes("demoPerfil=1");
+        return noToken || queryFlag;
+      } catch {
+        return true;
+      }
+    }, []);
   
     useEffect(() => {
       const fetchProfile = async () => {
         try {
+          if (isDemoMode) {
+            const demo = {
+              _id: "u-demo",
+              name: "Usuario",
+              lastName: "Demo",
+              email: "usuario@demo.local",
+              phone: "+56 9 5555 5555",
+            } as any;
+            setUser(demo);
+            setEmail(demo.email);
+            setPhone(demo.phone);
+            return;
+          }
           const data = await userService.getProfile();
           setUser(data);
           setEmail(data.email || "");
@@ -26,25 +51,29 @@ import {
         }
       };
       fetchProfile();
-    }, []);
+    }, [isDemoMode]);
   
     const handleSave = async () => {
       if (!user) return;
-  
+
       if (password && password !== confirmPassword) {
         alert("⚠️ Las contraseñas no coinciden");
         return;
       }
-  
+
       try {
-        const updated = await userService.updateUser(user._id, {
-          email,
-          phone,
-          ...(password ? { password } : {}), // 👈 solo si se cambia
-        });
-  
-        alert("✅ Datos de cuenta actualizados con éxito");
-        setUser(updated);
+        if (isDemoMode) {
+          setUser((prev: any) => (prev ? { ...prev, email, phone } : prev));
+          alert("✅ Datos de cuenta actualizados (demo)");
+        } else {
+          const updated = await userService.updateUser(user._id, {
+            email,
+            phone,
+            ...(password ? { password } : {}),
+          });
+          alert("✅ Datos de cuenta actualizados con éxito");
+          setUser(updated);
+        }
       } catch (err) {
         console.error("❌ Error al actualizar datos de cuenta:", err);
         alert("❌ No se pudo actualizar los datos");
@@ -54,7 +83,7 @@ import {
     if (!user) return <Typography>Cargando...</Typography>;
   
     return (
-      <Box className="flex flex-col items-center min-h-screen bg-[#f3fff5] p-8">
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", bgcolor: "background.default", p: 8 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Datos de Cuenta
         </Typography>
@@ -101,7 +130,7 @@ import {
   
         <Button
           variant="contained"
-          sx={{ mt: 3, backgroundColor: "#1F4D5D" }}
+          sx={{ mt: 3 }}
           onClick={handleSave}
         >
           Guardar Cambios

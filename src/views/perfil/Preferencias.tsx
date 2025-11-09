@@ -49,7 +49,7 @@ function Preferencias() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
-      <Button variant="contained" sx={{ mt: 2, backgroundColor: "#1F4D5D" }} onClick={handleSave}>
+      <Button variant="contained" sx={{ mt: 2 }} onClick={handleSave}>
         Guardar Preferencias
       </Button>
     </Box>

@@ -1,5 +1,5 @@
 import { Box, Typography, TextField, Button, Avatar } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { userService } from "../../db/services/userService";
 import { resolvePublicApiUrl } from "../../utils/media";
 import { buildPreferencesObjectFromText, parsePreferencesText } from "../../utils/preferences";
@@ -14,23 +14,51 @@ function ModificarPerfil() {
   const [bio, setBio] = useState("");
   const [preferencesText, setPreferencesText] = useState("");
 
+  // Demo sin backend para /perfil/modificar
+  const isDemoMode = useMemo(() => {
+    try {
+      const noToken = !localStorage.getItem("token");
+      const qs = typeof window !== "undefined" ? window.location.search : "";
+      const queryFlag = qs.includes("demoPerfil=true") || qs.includes("demoPerfil=1");
+      return noToken || queryFlag;
+    } catch {
+      return true;
+    }
+  }, []);
+
   const fetchProfile = async () => {
     try {
-      const [userData, details] = await Promise.all([
-        userService.getProfile(),
-        userService.getProfileDetails().catch(() => ({} as any)),
-      ]);
-      setUser(userData);
-      setPhoto(resolvePublicApiUrl(userData.photo));
-      setPhotoFile(null);
-      const resolvedBio = (details as any)?.bio ?? (details as any)?.biografia ?? "";
-      setBio(String(resolvedBio || ""));
-      const resolvedPrefsSource =
-        (userData as any)?.preferencias ??
-        (userData as any)?.preferences ??
-        (details as any)?.preferencias ??
-        (details as any)?.preferences;
-      setPreferencesText(parsePreferencesText(resolvedPrefsSource));
+      if (isDemoMode) {
+        const demoUser = {
+          _id: "u-demo",
+          name: "Usuario",
+          lastName: "Demo",
+          email: "usuario@demo.local",
+          photo: "",
+          preferencias: { theme: "light" },
+        } as any;
+        setUser(demoUser);
+        setPhoto("");
+        setPhotoFile(null);
+        setBio("Hola, soy un usuario de demo.");
+        setPreferencesText(parsePreferencesText(demoUser.preferencias));
+      } else {
+        const [userData, details] = await Promise.all([
+          userService.getProfile(),
+          userService.getProfileDetails().catch(() => ({} as any)),
+        ]);
+        setUser(userData);
+        setPhoto(resolvePublicApiUrl(userData.photo));
+        setPhotoFile(null);
+        const resolvedBio = (details as any)?.bio ?? (details as any)?.biografia ?? "";
+        setBio(String(resolvedBio || ""));
+        const resolvedPrefsSource =
+          (userData as any)?.preferencias ??
+          (userData as any)?.preferences ??
+          (details as any)?.preferencias ??
+          (details as any)?.preferences;
+        setPreferencesText(parsePreferencesText(resolvedPrefsSource));
+      }
     } catch (err) {
       console.error("❌ Error cargando perfil:", err);
     }
@@ -45,32 +73,53 @@ function ModificarPerfil() {
 
     try {
       const preferencesPayload = buildPreferencesObjectFromText(preferencesText);
-      const response = await userService.saveProfileDetails({
-        name: user.name,
-        lastName: user.lastName,
-        biografia: bio,
-        foto: photoFile,
-        preferencias: preferencesPayload,
-      });
-      const serverBio = (response as any)?.biografia;
-      if (typeof serverBio === "string") {
-        setBio(serverBio);
+      if (isDemoMode) {
+        setUser((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                name: user.name,
+                lastName: user.lastName,
+                preferencias: preferencesPayload,
+              }
+            : prev
+        );
+        if (photoFile) {
+          setPhoto(URL.createObjectURL(photoFile));
+        }
+        if (preferencesPayload) {
+          setPreferencesText(parsePreferencesText(preferencesPayload));
+        }
+        setPhotoFile(null);
+        alert("✅ Perfil actualizado (demo)");
+      } else {
+        const response = await userService.saveProfileDetails({
+          name: user.name,
+          lastName: user.lastName,
+          biografia: bio,
+          foto: photoFile,
+          preferencias: preferencesPayload,
+        });
+        const serverBio = (response as any)?.biografia;
+        if (typeof serverBio === "string") {
+          setBio(serverBio);
+        }
+        const serverPhoto =
+          typeof (response as any)?.fotoUrl === "string"
+            ? String((response as any).fotoUrl)
+            : typeof (response as any)?.foto === "string"
+              ? resolvePublicApiUrl((response as any).foto)
+              : "";
+        if (serverPhoto) {
+          setPhoto(serverPhoto);
+        }
+        if (preferencesPayload) {
+          setPreferencesText(parsePreferencesText(preferencesPayload));
+        }
+        setPhotoFile(null);
+        await fetchProfile();
+        alert("✅ Perfil actualizado con éxito");
       }
-      const serverPhoto =
-        typeof (response as any)?.fotoUrl === "string"
-          ? String((response as any).fotoUrl)
-          : typeof (response as any)?.foto === "string"
-            ? resolvePublicApiUrl((response as any).foto)
-            : "";
-      if (serverPhoto) {
-        setPhoto(serverPhoto);
-      }
-      if (preferencesPayload) {
-        setPreferencesText(parsePreferencesText(preferencesPayload));
-      }
-      setPhotoFile(null);
-      await fetchProfile();
-      alert("✅ Perfil actualizado con éxito");
     } catch (err) {
       console.error("❌ Error al actualizar perfil:", err);
       if (err instanceof Error && err.message.includes("No hay cambios")) {
@@ -84,7 +133,7 @@ function ModificarPerfil() {
   if (!user) return <Typography>Cargando...</Typography>;
 
   return (
-    <Box className="flex flex-col items-center min-h-screen bg-[#f3fff5] p-8">
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", bgcolor: "background.default", p: 8 }}>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
         Modificar Perfil
       </Typography>
@@ -158,7 +207,7 @@ function ModificarPerfil() {
         onChange={(e) => setPreferencesText(e.target.value)}
       />
 
-      <Button variant="contained" sx={{ mt: 3, backgroundColor: "#1F4D5D" }} onClick={handleSave}>
+      <Button variant="contained" sx={{ mt: 3 }} onClick={handleSave}>
         Guardar Cambios
       </Button>
     </Box>

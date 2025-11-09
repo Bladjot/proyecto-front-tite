@@ -55,7 +55,7 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#f3fff5]">
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Botón menú hamburguesa (arriba derecha) */}
       <IconButton
         onClick={() => setOpen(true)}
@@ -66,7 +66,7 @@ function Home() {
 
       {/* Drawer lateral derecho */}
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
-        <Box sx={{ width: 200, bgcolor: "#d9fbe0", height: "100%" }}>
+        <Box sx={{ width: 200, bgcolor: "background.paper", height: "100%" }}>
           <List sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
             {menuOptions.map((option) => (
               <ListItem key={option.path} disablePadding>
@@ -104,36 +104,8 @@ function Home() {
         <Typography variant="h6">En construcción...</Typography>
       </Paper>
 
-      {/* Accesibilidad abajo izquierda */}
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 20,
-          left: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <span role="img" aria-label="lectura">🔊</span>
-        <Typography fontSize={14}>Modo lectura</Typography>
-      </Box>
-
-      {/* Accesibilidad abajo derecha */}
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 20,
-          right: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-        }}
-      >
-        <Typography fontSize={14}>Daltonismo</Typography>
-        <span style={{ marginLeft: "4px" }}>🔘</span>
-      </Box>
-    </div>
+      
+    </Box>
   );
 }
 

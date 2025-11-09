@@ -282,12 +282,12 @@ function Perfil() {
   };
 
   return (
-    <div className="flex flex-row min-h-screen bg-[#f3fff5]">
+    <Box sx={{ display: "flex", flexDirection: "row", minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Sidebar lateral izquierdo */}
       <Box
         sx={{
           width: 220,
-          bgcolor: "#d9fbe0",
+          bgcolor: "background.paper",
           p: 2,
           display: "flex",
           flexDirection: "column",
@@ -301,7 +301,7 @@ function Perfil() {
           <Button
             variant="contained"
             size="small"
-            sx={{ mb: 2, backgroundColor: "#1F4D5D" }}
+            sx={{ mb: 2 }}
             onClick={() => navigate("/home")}
             fullWidth
           >
@@ -443,7 +443,7 @@ function Perfil() {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           />
-          <Button variant="contained" sx={{ mt: 2, backgroundColor: "#1F4D5D" }} onClick={handleSaveProfile}>
+          <Button variant="contained" sx={{ mt: 2 }} onClick={handleSaveProfile}>
             Guardar Cambios
           </Button>
         </Paper>
@@ -494,7 +494,7 @@ function Perfil() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <Button variant="contained" sx={{ mt: 2, backgroundColor: "#1F4D5D" }} onClick={handleSaveAccount}>
+          <Button variant="contained" sx={{ mt: 2 }} onClick={handleSaveAccount}>
             Guardar Cambios
           </Button>
         </Paper>
@@ -515,14 +515,14 @@ function Perfil() {
           />
           <Button
             variant="contained"
-            sx={{ mt: 2, backgroundColor: "#1F4D5D" }}
+            sx={{ mt: 2 }}
             onClick={handleSavePreferences}
           >
             Guardar Preferencias
           </Button>
         </Paper>
       </Box>
-    </div>
+    </Box>
   );
 }
 

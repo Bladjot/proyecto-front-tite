@@ -130,7 +130,20 @@ function AdminUsers() {
   const [vendorRequestsLoading, setVendorRequestsLoading] = useState(false);
   const [vendorRequestsError, setVendorRequestsError] = useState<string | null>(null);
 
+  // Demo sin backend: habilita /admin con datos de ejemplo si no hay token
+  const isDemoMode = useMemo(() => {
+    try {
+      const noToken = !localStorage.getItem("token");
+      const qs = typeof window !== "undefined" ? window.location.search : "";
+      const queryFlag = qs.includes("demoAdmin=true") || qs.includes("demoAdmin=1");
+      return noToken || queryFlag;
+    } catch {
+      return true;
+    }
+  }, []);
+
   const currentUserIsAdmin = useMemo(() => {
+    if (isDemoMode) return true;
     try {
       const rawUser = localStorage.getItem("user");
       if (!rawUser) return false;
@@ -143,7 +156,7 @@ function AdminUsers() {
       console.warn("[admin] No se pudo determinar el rol del usuario actual", parseError);
       return false;
     }
-  }, []);
+  }, [isDemoMode]);
 
   const showSnack = (message: string, severity: SnackbarState["severity"]) => {
     setSnack({ open: true, message, severity });
@@ -157,6 +170,36 @@ function AdminUsers() {
     try {
       setLoading(true);
       setError(null);
+      if (isDemoMode) {
+        const demoUsers: UserRecord[] = [
+          {
+            id: "1",
+            name: "Admin",
+            lastName: "Demo",
+            email: "admin@demo.local",
+            rut: "12.345.678-9",
+            roles: ["admin"],
+          },
+          {
+            id: "2",
+            name: "Vendedora",
+            lastName: "Prueba",
+            email: "vendedora@demo.local",
+            rut: "9.876.543-2",
+            roles: ["vendedor"],
+          },
+          {
+            id: "3",
+            name: "Cliente",
+            lastName: "Ejemplo",
+            email: "cliente@demo.local",
+            rut: "7.654.321-0",
+            roles: ["cliente"],
+          },
+        ];
+        setUsers(demoUsers);
+        return;
+      }
       const data = await userService.getUsers();
       setUsers(data);
     } catch (cause: unknown) {
@@ -171,21 +214,32 @@ function AdminUsers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isDemoMode]);
 
   useEffect(() => {
     if (!currentUserIsAdmin) {
-      navigate("/dashboard", { replace: true });
+      if (!isDemoMode) {
+        navigate("/dashboard", { replace: true });
+      }
       return;
     }
     fetchUsers();
-  }, [currentUserIsAdmin, fetchUsers, navigate]);
+  }, [currentUserIsAdmin, fetchUsers, navigate, isDemoMode]);
 
   useEffect(() => {
     if (!currentUserIsAdmin) return;
 
     const fetchRoles = async () => {
       try {
+        if (isDemoMode) {
+          const demoRoles: RoleRecord[] = FALLBACK_ROLES.map((r) => ({
+            id: r,
+            value: r,
+            label: ROLE_LABELS[r] ?? r,
+          }));
+          setRoleCatalog(demoRoles);
+          return;
+        }
         const roles = await userService.getRoles();
         setRoleCatalog(roles);
       } catch (cause: unknown) {
@@ -199,7 +253,7 @@ function AdminUsers() {
     };
 
     fetchRoles();
-  }, [currentUserIsAdmin]);
+  }, [currentUserIsAdmin, isDemoMode]);
 
   useEffect(() => {
     if (!currentUserIsAdmin) return;
@@ -207,6 +261,20 @@ function AdminUsers() {
       try {
         setVendorRequestsLoading(true);
         setVendorRequestsError(null);
+        if (isDemoMode) {
+          setVendorRequests([
+            {
+              id: "req-1",
+              userId: "2",
+              storeName: "Tienda Demo",
+              contactNumber: "+56 9 1234 5678",
+              companyRut: "76.543.210-5",
+              status: "pending",
+              applicant: { name: "Vendedora", lastName: "Prueba", email: "vendedora@demo.local" },
+            },
+          ]);
+          return;
+        }
         const requests = await userService.getVendorAccreditations();
         setVendorRequests(requests);
       } catch (cause: unknown) {
@@ -226,16 +294,21 @@ function AdminUsers() {
     fetchVendorRequests();
     const interval = setInterval(fetchVendorRequests, 10000);
     return () => clearInterval(interval);
-  }, [currentUserIsAdmin]);
+  }, [currentUserIsAdmin, isDemoMode]);
 
   const handleDeleteVendorRequest = async (id?: string) => {
     if (!id) return;
     const confirmed = window.confirm("¿Seguro que deseas eliminar esta solicitud?");
     if (!confirmed) return;
     try {
-      await userService.deleteVendorAccreditation(id);
-      setVendorRequests((prev) => prev.filter((request) => request.id !== id));
-      showSnack("Solicitud eliminada", "success");
+      if (isDemoMode) {
+        setVendorRequests((prev) => prev.filter((request) => request.id !== id));
+        showSnack("Solicitud eliminada (demo)", "success");
+      } else {
+        await userService.deleteVendorAccreditation(id);
+        setVendorRequests((prev) => prev.filter((request) => request.id !== id));
+        showSnack("Solicitud eliminada", "success");
+      }
     } catch (cause: unknown) {
       console.error("[admin] Error al eliminar solicitud:", cause);
       if (isAxiosError(cause) && cause.response?.status === 404) {
@@ -373,19 +446,41 @@ function AdminUsers() {
 
     try {
       setSaving(true);
-      if (formState.id) {
-        const updated = await userService.updateUser(formState.id, payload);
-        const mapped = mapUserRecord(updated);
-        setUsers((prev) =>
-          prev.map((user) => (user.id === mapped.id ? mapped : user))
-        );
-        showSnack("Usuario actualizado", "success");
+      if (isDemoMode) {
+        if (formState.id) {
+          setUsers((prev) =>
+            prev.map((u) => (u.id === formState.id ? { ...u, ...(payload as any) } : u))
+          );
+          showSnack("Usuario actualizado (demo)", "success");
+        } else {
+          const newId = String(Date.now());
+          const newUser: UserRecord = {
+            id: newId,
+            name: String(payload.name || ""),
+            lastName: String(payload.lastName || ""),
+            email: String(payload.email || ""),
+            rut: (payload.rut as string) || "",
+            roles: Array.isArray(payload.roles) ? (payload.roles as string[]) : ["cliente"],
+          };
+          setUsers((prev) => [...prev, newUser]);
+          showSnack("Usuario creado (demo)", "success");
+        }
+        handleCloseDialog();
       } else {
-        const created = await userService.createUser(payload);
-        setUsers((prev) => [...prev, created]);
-        showSnack("Usuario creado", "success");
+        if (formState.id) {
+          const updated = await userService.updateUser(formState.id, payload);
+          const mapped = mapUserRecord(updated);
+          setUsers((prev) =>
+            prev.map((user) => (user.id === mapped.id ? mapped : user))
+          );
+          showSnack("Usuario actualizado", "success");
+        } else {
+          const created = await userService.createUser(payload);
+          setUsers((prev) => [...prev, created]);
+          showSnack("Usuario creado", "success");
+        }
+        handleCloseDialog();
       }
-      handleCloseDialog();
     } catch (cause: unknown) {
       console.error("[admin] Error al guardar usuario:", cause);
       const message =
@@ -404,9 +499,14 @@ function AdminUsers() {
     const confirmed = window.confirm("¿Seguro que deseas eliminar este usuario?");
     if (!confirmed) return;
     try {
-      await userService.deleteUser(id);
-      setUsers((prev) => prev.filter((user) => user.id !== id));
-      showSnack("Usuario eliminado", "success");
+      if (isDemoMode) {
+        setUsers((prev) => prev.filter((user) => user.id !== id));
+        showSnack("Usuario eliminado (demo)", "success");
+      } else {
+        await userService.deleteUser(id);
+        setUsers((prev) => prev.filter((user) => user.id !== id));
+        showSnack("Usuario eliminado", "success");
+      }
     } catch (cause: unknown) {
       console.error("[admin] Error al eliminar usuario:", cause);
       const message =
@@ -429,7 +529,7 @@ function AdminUsers() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f7fa", py: 6, px: { xs: 2, md: 6 } }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: 6, px: { xs: 2, md: 6 } }}>
       <Stack
         direction={{ xs: "column", md: "row" }}
         justifyContent="space-between"
