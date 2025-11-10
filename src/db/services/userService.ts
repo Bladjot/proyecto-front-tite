@@ -48,6 +48,37 @@ export type RoleRecord = {
   label: string;
 };
 
+export type RawVendorAccreditation = {
+  id?: string;
+  _id?: string;
+  nombre_tienda?: string;
+  telefono_contacto?: string;
+  rut_empresa?: string;
+  estado?: string;
+  usuario_id?: string;
+  storeName?: string;
+  contactNumber?: string;
+  companyRut?: string;
+  status?: string;
+  userId?: string;
+  applicant?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    lastName?: string;
+    email?: string;
+  };
+};
+
+export type VendorAccreditationRecord = RawVendorAccreditation & {
+  id?: string;
+  userId?: string;
+  storeName?: string;
+  contactNumber?: string;
+  companyRut?: string;
+  status?: string;
+};
+
 const ROLE_CANONICAL_MAP: Record<string, string> = {
   usuario: "cliente",
   user: "cliente",
@@ -131,6 +162,16 @@ export const mapUserRecord = (raw: RawUser): UserRecord => ({
         .filter(Boolean)
     : [],
   permisos: Array.isArray(raw.permisos) ? raw.permisos : [],
+});
+
+const mapVendorAccreditation = (raw: RawVendorAccreditation): VendorAccreditationRecord => ({
+  ...raw,
+  id: raw.id || raw._id || raw.usuario_id || undefined,
+  userId: raw.userId || raw.usuario_id,
+  storeName: raw.storeName || raw.nombre_tienda,
+  contactNumber: raw.contactNumber || raw.telefono_contacto,
+  companyRut: raw.companyRut || raw.rut_empresa,
+  status: raw.status || raw.estado || "pendiente",
 });
 
 const persistStoredUserPhoto = (relativePhoto: string) => {
@@ -303,11 +344,14 @@ export const userService = {
   },
 
   // Listar solicitudes de acreditación (solo admins)
-  getVendorAccreditations: async () => {
-    const response = await api.get("/vendor-accreditations", {
+  getVendorAccreditations: async (): Promise<VendorAccreditationRecord[]> => {
+    const response = await api.get<RawVendorAccreditation[]>("/vendor-accreditations", {
       headers: getAuthHeaders(),
     });
-    return Array.isArray(response.data) ? response.data : [];
+    if (!Array.isArray(response.data)) {
+      return [];
+    }
+    return response.data.map((request) => mapVendorAccreditation(request));
   },
 
   // Eliminar solicitud de acreditación (solo admins)

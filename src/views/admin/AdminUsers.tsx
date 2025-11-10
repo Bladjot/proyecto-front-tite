@@ -41,6 +41,7 @@ import {
   normaliseRoleValue,
   type UserRecord,
   type RoleRecord,
+  type VendorAccreditationRecord,
   userService,
 } from "../../db/services/userService";
 import { formatRut, isRutFormatValid, normaliseRut, sanitiseRutInput } from "../../utils/rut";
@@ -102,24 +103,6 @@ const toFormState = (user: UserRecord): UserFormState => ({
   password: "",
 });
 
-type VendorAccreditationRequest = {
-  id?: string;
-  _id?: string;
-  userId?: string;
-  storeName?: string;
-  contactNumber?: string;
-  companyRut?: string;
-  nombre_tienda?: string;
-  telefono_contacto?: string;
-  rut_empresa?: string;
-  status?: string;
-  applicant?: {
-    name?: string;
-    lastName?: string;
-    email?: string;
-  };
-};
-
 function AdminUsers() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -131,7 +114,7 @@ function AdminUsers() {
   const [snack, setSnack] = useState<SnackbarState>(defaultSnackState);
   const [roleCatalog, setRoleCatalog] = useState<RoleRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [vendorRequests, setVendorRequests] = useState<VendorAccreditationRequest[]>([]);
+  const [vendorRequests, setVendorRequests] = useState<VendorAccreditationRecord[]>([]);
   const [vendorRequestsLoading, setVendorRequestsLoading] = useState(false);
   const [vendorRequestsError, setVendorRequestsError] = useState<string | null>(null);
 
@@ -239,7 +222,7 @@ function AdminUsers() {
     if (!confirmed) return;
     try {
       await userService.deleteVendorAccreditation(id);
-      setVendorRequests((prev) => prev.filter((request) => request.id !== id));
+      setVendorRequests((prev) => prev.filter((request) => request.id !== id && request._id !== id));
       showSnack("Solicitud eliminada", "success");
     } catch (cause: unknown) {
       console.error("[admin] Error al eliminar solicitud:", cause);
@@ -696,25 +679,16 @@ function AdminUsers() {
                   p: 2,
                   display: "flex",
                   flexDirection: { xs: "column", sm: "row" },
-                  justifyContent: "space-between",
-                  gap: 1,
+                  justifyContent: "center",
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: { xs: 1, sm: 3 },
                 }}
               >
-                <Box>
-                  <Typography fontWeight={600}>
-                    {request.applicant?.name} {request.applicant?.lastName}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {request.applicant?.email || "Sin correo asignado"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Estado: {request.status ?? "pending"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Usuario solicitante: {request.userId || "N/D"}
-                  </Typography>
-                </Box>
-                <Stack spacing={0.5} flex={1}>
+                <Stack
+                  spacing={0.5}
+                  flex={1}
+                  sx={{ textAlign: { xs: "left", sm: "center" }, minWidth: { sm: 260 } }}
+                >
                   <Typography variant="body2">
                     <Box component="span" fontWeight={600}>
                       Nombre de tienda:
@@ -734,7 +708,47 @@ function AdminUsers() {
                     {request.companyRut || request.rut_empresa || "—"}
                   </Typography>
                 </Stack>
-                <Stack spacing={1} direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }}>
+                <Box
+                  sx={{
+                    minWidth: { sm: 220 },
+                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  <Typography fontWeight={600}>
+                    {request.applicant?.name} {request.applicant?.lastName}
+                  </Typography>
+                  {request.applicant?.email && (
+                    <Typography variant="body2" color="text.secondary">
+                      {request.applicant.email}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" fontWeight={600}>
+                    Estado
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {request.status ?? request.estado ?? "pendiente"}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600}>
+                    Usuario solicitante
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {request.userId ||
+                      request.usuario_id ||
+                      request.applicant?.id ||
+                      request.applicant?._id ||
+                      "N/D"}
+                  </Typography>
+                </Box>
+                <Stack
+                  spacing={1}
+                  direction={{ xs: "column", sm: "row" }}
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                  justifyContent="center"
+                >
                   <Button
                     variant="outlined"
                     color="error"
