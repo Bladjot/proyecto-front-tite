@@ -45,9 +45,9 @@ function AcreditarVendedor() {
     setFeedback(null);
     try {
       await userService.createVendorAccreditation({
-        storeName: trimmedStore,
-        contactNumber: trimmedContact,
-        companyRut: sanitiseRutInput(trimmedRut),
+        nombre_tienda: trimmedStore,
+        telefono_contacto: trimmedContact,
+        rut_empresa: sanitiseRutInput(trimmedRut),
       });
       setFeedback({
         type: "success",

@@ -286,16 +286,16 @@ export const userService = {
 
   // Enviar solicitud de acreditación como vendedor
   createVendorAccreditation: async (payload: {
-    storeName: string;
-    contactNumber: string;
-    companyRut: string;
+    nombre_tienda: string;
+    telefono_contacto: string;
+    rut_empresa: string;
   }) => {
     const response = await api.post(
       "/vendor-accreditations",
       {
-        storeName: payload.storeName,
-        contactNumber: payload.contactNumber,
-        companyRut: payload.companyRut,
+        nombre_tienda: payload.nombre_tienda,
+        telefono_contacto: payload.telefono_contacto,
+        rut_empresa: payload.rut_empresa,
       },
       { headers: getAuthHeaders() }
     );

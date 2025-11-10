@@ -109,6 +109,9 @@ type VendorAccreditationRequest = {
   storeName?: string;
   contactNumber?: string;
   companyRut?: string;
+  nombre_tienda?: string;
+  telefono_contacto?: string;
+  rut_empresa?: string;
   status?: string;
   applicant?: {
     name?: string;
@@ -716,19 +719,19 @@ function AdminUsers() {
                     <Box component="span" fontWeight={600}>
                       Nombre de tienda:
                     </Box>{" "}
-                    {request.storeName || "—"}
+                    {request.storeName || request.nombre_tienda || "—"}
                   </Typography>
                   <Typography variant="body2">
                     <Box component="span" fontWeight={600}>
                       Número de contacto:
                     </Box>{" "}
-                    {request.contactNumber || "—"}
+                    {request.contactNumber || request.telefono_contacto || "—"}
                   </Typography>
                   <Typography variant="body2">
                     <Box component="span" fontWeight={600}>
                       RUT empresa:
                     </Box>{" "}
-                    {request.companyRut || "—"}
+                    {request.companyRut || request.rut_empresa || "—"}
                   </Typography>
                 </Stack>
                 <Stack spacing={1} direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "stretch", sm: "center" }}>
