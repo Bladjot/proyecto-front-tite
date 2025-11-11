@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, IconButton, Box } from "@mui/material";
+import { AppBar, Toolbar, IconButton, Box } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import React from "react";
 import BrandLogo from "../BrandLogo";

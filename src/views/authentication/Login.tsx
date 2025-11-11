@@ -16,8 +16,8 @@ import BottomBar from "../../components/layout/BottomBar";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -33,21 +33,21 @@ function Login() {
   const navigate = useNavigate();
 
   // Validaciones
-  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isValidCorreo = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isValidPassword = (v: string) => v.length >= 6;
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!correo || !contrasena) {
       setMessage("⚠️ Ingresa correo y contraseña");
       setSnack({ open: true, message: "Ingresa correo y contraseña", severity: "warning" });
       return;
     }
-    if (!isValidEmail(email)) {
+    if (!isValidCorreo(correo)) {
       setMessage("⚠️ Formato de correo no válido");
       setSnack({ open: true, message: "Formato de correo no válido", severity: "error" });
       return;
     }
-    if (!isValidPassword(password)) {
+    if (!isValidPassword(contrasena)) {
       setMessage("⚠️ Contraseña inválida (mínimo 6 caracteres)");
       setSnack({
         open: true,
@@ -65,7 +65,7 @@ function Login() {
     setMessage("");
 
     try {
-      const response: AuthResponse = await authService.login(email, password, recaptchaToken);
+      const response: AuthResponse = await authService.login(correo, contrasena, recaptchaToken);
       setMessage("✅ Inicio de sesión exitoso");
       setSnack({ open: true, message: "Inicio de sesión exitoso", severity: "success" });
       if (response?.access_token) {
@@ -152,18 +152,18 @@ function Login() {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* Email */}
+          {/* Correo */}
           <TextField
-            label="Email"
+            label="Correo electrónico"
             type="email"
             variant="outlined"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
             size="small"
             fullWidth
-            error={email.length > 0 && !isValidEmail(email)}
+            error={correo.length > 0 && !isValidCorreo(correo)}
             helperText={
-              email.length > 0 && !isValidEmail(email)
+              correo.length > 0 && !isValidCorreo(correo)
                 ? "Ingresa un correo válido (ej: nombre@dominio.com)"
                 : " "
             }
@@ -175,14 +175,14 @@ function Login() {
             label="Contraseña"
             type={showPassword ? "text" : "password"}
             variant="outlined"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={contrasena}
+            onChange={(e) => setContrasena(e.target.value)}
             size="small"
             fullWidth
             autoComplete="current-password"
-            error={password.length > 0 && !isValidPassword(password)}
+            error={contrasena.length > 0 && !isValidPassword(contrasena)}
             helperText={
-              password.length > 0 && !isValidPassword(password)
+              contrasena.length > 0 && !isValidPassword(contrasena)
                 ? "Mínimo 6 caracteres"
                 : " "
             }

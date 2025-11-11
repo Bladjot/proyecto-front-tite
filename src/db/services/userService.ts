@@ -9,26 +9,45 @@ import { serializePreferencesValue } from "../../utils/preferences";
 export type RawUser = {
   id?: string;
   _id?: string;
+  nombre?: string;
+  apellido?: string;
+  correo?: string;
+  contrasena?: string;
+  telefono?: string;
+  rut?: string;
+  roles?: string[];
+  permisos?: string[];
+  permissions?: string[];
+  activo?: boolean;
+  foto?: string;
+  creado_en?: string;
+  actualizado_en?: string;
+  // Legacy fallbacks
   name?: string;
   lastName?: string;
   email?: string;
-  telefono?: string;
-  rut?: string;
+  password?: string;
   phone?: string;
+  isActive?: boolean;
   photo?: string;
+  createdAt?: string;
+  updatedAt?: string;
   bio?: string;
-  roles?: string[];
-  permisos?: string[];
 };
 
 export type UserRecord = {
   id: string;
-  name: string;
-  lastName: string;
-  email: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
   rut?: string;
+  telefono?: string;
   roles: string[];
-  permisos?: string[];
+  permisos: string[];
+  activo?: boolean;
+  foto?: string;
+  creado_en?: string;
+  actualizado_en?: string;
 };
 
 export type RawRole = {
@@ -64,8 +83,11 @@ export type RawVendorAccreditation = {
   applicant?: {
     id?: string;
     _id?: string;
+    nombre?: string;
+    apellido?: string;
     name?: string;
     lastName?: string;
+    correo?: string;
     email?: string;
   };
 };
@@ -92,12 +114,17 @@ export const normaliseRoleValue = (role: unknown): string => {
 };
 
 const PASSWORD_KEYS = [
+  "contrasena",
   "password",
   "newPassword",
+  "nuevaContrasena",
   "passwordConfirmation",
   "password_confirmation",
   "confirmPassword",
   "password_confirm",
+  "contrasenaActual",
+  "currentPassword",
+  "new_password",
 ];
 
 const getAuthHeaders = () => {
@@ -150,36 +177,115 @@ const resolveRutValue = (raw: RawUser): string => {
   return "";
 };
 
-export const mapUserRecord = (raw: RawUser): UserRecord => ({
-  id: raw.id || raw._id || "",
-  name: raw.name ?? "",
-  lastName: raw.lastName ?? "",
-  email: raw.email ?? "",
-  rut: resolveRutValue(raw),
-  roles: Array.isArray(raw.roles)
-    ? raw.roles
-        .map((role) => normaliseRoleValue(role))
-        .filter(Boolean)
-    : [],
-  permisos: Array.isArray(raw.permisos) ? raw.permisos : [],
-});
+export const mapUserRecord = (raw: RawUser): UserRecord => {
+  const idCandidate = raw.id ?? raw._id ?? "";
+  const id = typeof idCandidate === "string" ? idCandidate : String(idCandidate || "");
+  const nombre =
+    typeof raw.nombre === "string"
+      ? raw.nombre
+      : typeof raw.name === "string"
+        ? raw.name
+        : "";
+  const apellido =
+    typeof raw.apellido === "string"
+      ? raw.apellido
+      : typeof raw.lastName === "string"
+        ? raw.lastName
+        : "";
+  const correo =
+    typeof raw.correo === "string"
+      ? raw.correo
+      : typeof raw.email === "string"
+        ? raw.email
+        : "";
+  const telefono =
+    typeof raw.telefono === "string"
+      ? raw.telefono
+      : typeof raw.phone === "string"
+        ? raw.phone
+        : undefined;
 
-const mapVendorAccreditation = (raw: RawVendorAccreditation): VendorAccreditationRecord => ({
-  ...raw,
-  id: raw.id || raw._id || raw.usuario_id || undefined,
-  userId: raw.userId || raw.usuario_id,
-  storeName: raw.storeName || raw.nombre_tienda,
-  contactNumber: raw.contactNumber || raw.telefono_contacto,
-  companyRut: raw.companyRut || raw.rut_empresa,
-  status: raw.status || raw.estado || "pendiente",
-});
+  const roles = Array.isArray(raw.roles)
+    ? raw.roles.map((role) => normaliseRoleValue(role)).filter(Boolean)
+    : [];
+
+  const permisosSource = Array.isArray(raw.permisos)
+    ? raw.permisos
+    : Array.isArray(raw.permissions)
+      ? raw.permissions
+      : [];
+  const permisos = permisosSource.filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+
+  const activo =
+    typeof raw.activo === "boolean"
+      ? raw.activo
+      : typeof raw.isActive === "boolean"
+        ? raw.isActive
+        : undefined;
+
+  const foto =
+    typeof raw.foto === "string"
+      ? raw.foto
+      : typeof raw.photo === "string"
+        ? raw.photo
+        : undefined;
+
+  const creado_en = raw.creado_en ?? raw.createdAt;
+  const actualizado_en = raw.actualizado_en ?? raw.updatedAt;
+
+  return {
+    id,
+    nombre,
+    apellido,
+    correo,
+    telefono,
+    rut: resolveRutValue(raw),
+    roles,
+    permisos,
+    activo,
+    foto,
+    creado_en,
+    actualizado_en,
+  };
+};
+
+const mapVendorAccreditation = (raw: RawVendorAccreditation): VendorAccreditationRecord => {
+  const applicant = raw.applicant
+    ? {
+        ...raw.applicant,
+        nombre:
+          raw.applicant.nombre ??
+          raw.applicant.name ??
+          "",
+        apellido:
+          raw.applicant.apellido ??
+          raw.applicant.lastName ??
+          "",
+        correo:
+          raw.applicant.correo ??
+          raw.applicant.email ??
+          "",
+      }
+    : undefined;
+
+  return {
+    ...raw,
+    id: raw.id || raw._id || raw.usuario_id || undefined,
+    userId: raw.userId || raw.usuario_id,
+    storeName: raw.storeName || raw.nombre_tienda,
+    contactNumber: raw.contactNumber || raw.telefono_contacto,
+    companyRut: raw.companyRut || raw.rut_empresa,
+    status: raw.status || raw.estado || "pendiente",
+    applicant,
+  };
+};
 
 const persistStoredUserPhoto = (relativePhoto: string) => {
   try {
     const stored = localStorage.getItem("user");
     if (!stored) return;
     const parsed = JSON.parse(stored) as Record<string, unknown>;
-    const updated = { ...parsed, photo: relativePhoto };
+    const updated = { ...parsed, foto: relativePhoto, photo: relativePhoto };
     localStorage.setItem("user", JSON.stringify(updated));
   } catch (error) {
     console.warn("[userService] No se pudo actualizar la foto en localStorage", error);
@@ -187,7 +293,8 @@ const persistStoredUserPhoto = (relativePhoto: string) => {
 };
 
 const enrichProfileDetailsResponse = (payload: Record<string, unknown>) => {
-  const responsePhoto = typeof (payload as any)?.foto === "string" ? String((payload as any).foto) : "";
+  const fotoSource = (payload as any)?.foto ?? (payload as any)?.photo ?? "";
+  const responsePhoto = typeof fotoSource === "string" ? String(fotoSource) : "";
   if (responsePhoto) {
     persistStoredUserPhoto(responsePhoto);
     return {
@@ -253,16 +360,21 @@ export const userService = {
 
   // Guardar detalles de perfil (nombre, apellido, biografía, preferencias) del usuario autenticado
   saveProfileDetails: async (details: {
+    nombre?: string | null;
     name?: string | null;
+    apellido?: string | null;
     lastName?: string | null;
     biografia?: string | null;
     bio?: string | null;
     preferencias?: unknown;
     preferences?: unknown;
+    correo?: string | null;
     email?: string | null;
     telefono?: string | null;
     phone?: string | null;
+    contrasenaActual?: string | null;
     currentPassword?: string | null;
+    nuevaContrasena?: string | null;
     newPassword?: string | null;
     foto?: File | Blob | null;
   }) => {
@@ -283,17 +395,17 @@ export const userService = {
       }
     };
 
-    appendIfPresent("name", sanitizeField(details.name));
-    appendIfPresent("lastName", sanitizeField(details.lastName));
+    appendIfPresent("nombre", sanitizeField(details.nombre ?? details.name));
+    appendIfPresent("apellido", sanitizeField(details.apellido ?? details.lastName));
     appendIfPresent("biografia", sanitizeField(details.biografia ?? details.bio));
-    appendIfPresent("email", sanitizeField(details.email));
+    appendIfPresent("correo", sanitizeField(details.correo ?? details.email));
     appendIfPresent("telefono", sanitizeField(details.telefono ?? details.phone));
 
     const preferenciasValue = serializePreferencesValue(details.preferencias ?? details.preferences);
     appendIfPresent("preferencias", preferenciasValue);
 
-    appendIfPresent("currentPassword", sanitizeField(details.currentPassword));
-    appendIfPresent("newPassword", sanitizeField(details.newPassword));
+    appendIfPresent("contrasenaActual", sanitizeField(details.contrasenaActual ?? details.currentPassword));
+    appendIfPresent("nuevaContrasena", sanitizeField(details.nuevaContrasena ?? details.newPassword));
 
     if (details.foto instanceof File || details.foto instanceof Blob) {
       formData.append("foto", details.foto);
@@ -408,15 +520,15 @@ const sanitizeUserPayload = async (rawData: Record<string, unknown>) => {
     if (typeof value === "string" && value.trim().length >= 6) {
       passwordCandidate = value.trim();
     }
-    if (key !== "password") {
+    if (key !== "contrasena") {
       delete payload[key];
     }
   }
 
   if (passwordCandidate) {
-    payload.password = await bcrypt.hash(passwordCandidate, 10);
-  } else if (typeof payload.password === "string" && payload.password.trim().length < 6) {
-    delete payload.password;
+    payload.contrasena = await bcrypt.hash(passwordCandidate, 10);
+  } else if (typeof payload.contrasena === "string" && payload.contrasena.trim().length < 6) {
+    delete payload.contrasena;
   }
 
   return payload;

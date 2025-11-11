@@ -18,10 +18,10 @@ const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Register() {
   const [rut, setRut] = useState("");
   const [nombre, setNombre] = useState("");
-  const [apellidos, setApellidos] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [repassword, setRepassword] = useState("");
+  const [apellido, setApellido] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [terms, setTerms] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -44,11 +44,11 @@ function Register() {
 
   const handleRegister = async () => {
     const trimmedRut = rut.trim();
-    const trimmedName = nombre.trim();
-    const trimmedLastName = apellidos.trim();
-    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedNombre = nombre.trim();
+    const trimmedApellido = apellido.trim();
+    const trimmedCorreo = correo.trim().toLowerCase();
 
-    if (!trimmedRut || !trimmedName || !trimmedLastName || !trimmedEmail || !password || !repassword) {
+    if (!trimmedRut || !trimmedNombre || !trimmedApellido || !trimmedCorreo || !contrasena || !confirmarContrasena) {
       return setSnack({ open: true, message: "Completa todos los campos requeridos", severity: "warning" });
     }
     if (!isValidRut(trimmedRut)) {
@@ -59,17 +59,17 @@ function Register() {
       });
     }
     const normalisedRut = normaliseRut(trimmedRut);
-    if (!isValidEmail(trimmedEmail)) {
+    if (!isValidEmail(trimmedCorreo)) {
       return setSnack({ open: true, message: "Correo no válido", severity: "error" });
     }
-    if (!isValidPassword(password)) {
+    if (!isValidPassword(contrasena)) {
       return setSnack({
         open: true,
         message: "Contraseña inválida: mínimo 6 caracteres",
         severity: "error",
       });
     }
-    if (password !== repassword) {
+    if (contrasena !== confirmarContrasena) {
       return setSnack({ open: true, message: "Las contraseñas no coinciden", severity: "error" });
     }
     if (!terms) {
@@ -81,11 +81,11 @@ function Register() {
     setLoading(true);
     try {
       const payload = {
-        name: trimmedName,
-        lastName: trimmedLastName,
+        nombre: trimmedNombre,
+        apellido: trimmedApellido,
         rut: normalisedRut,
-        email: trimmedEmail,
-        password,
+        correo: trimmedCorreo,
+        contrasena,
         recaptchaToken,
       };
       const response: AuthResponse = await authService.register(payload);
@@ -99,7 +99,7 @@ function Register() {
       }
       setSnack({
         open: true,
-        message: `Usuario ${user?.email || trimmedEmail} creado con éxito`,
+        message: `Usuario ${user?.correo || trimmedCorreo} creado con éxito`,
         severity: "success",
       });
       const target = resolvePostAuthRedirect(response?.redirectTo, response?.user?.roles);
@@ -200,12 +200,12 @@ function Register() {
             />
 
             <TextField
-              label="Apellidos"
+              label="Apellido"
               variant="outlined"
               size="small"
               fullWidth
-              value={apellidos}
-              onChange={(e) => setApellidos(e.target.value)}
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
               helperText=" "
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
             />
@@ -216,11 +216,11 @@ function Register() {
               variant="outlined"
               size="small"
               fullWidth
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={email.length > 0 && !isValidEmail(email)}
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              error={correo.length > 0 && !isValidEmail(correo)}
               helperText={
-                email.length > 0 && !isValidEmail(email)
+                correo.length > 0 && !isValidEmail(correo)
                   ? "Ingresa un correo válido (ej: nombre@dominio.com)"
                   : " "
               }
@@ -233,12 +233,12 @@ function Register() {
               variant="outlined"
               size="small"
               fullWidth
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
               autoComplete="new-password"
-              error={password.length > 0 && !isValidPassword(password)}
+              error={contrasena.length > 0 && !isValidPassword(contrasena)}
               helperText={
-                password.length > 0 && !isValidPassword(password)
+                contrasena.length > 0 && !isValidPassword(contrasena)
                   ? "Mínimo 6 caracteres"
                   : " "
               }
@@ -260,11 +260,13 @@ function Register() {
               variant="outlined"
               size="small"
               fullWidth
-              value={repassword}
-              onChange={(e) => setRepassword(e.target.value)}
+              value={confirmarContrasena}
+              onChange={(e) => setConfirmarContrasena(e.target.value)}
               autoComplete="new-password"
-              error={repassword.length > 0 && repassword !== password}
-              helperText={repassword.length > 0 && repassword !== password ? "Las contraseñas no coinciden" : " "}
+              error={confirmarContrasena.length > 0 && confirmarContrasena !== contrasena}
+              helperText={
+                confirmarContrasena.length > 0 && confirmarContrasena !== contrasena ? "Las contraseñas no coinciden" : " "
+              }
               sx={{ "& .MuiInputBase-input": { py: 1.05 } }}
               InputProps={{
                 endAdornment: (

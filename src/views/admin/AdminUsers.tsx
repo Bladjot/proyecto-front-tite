@@ -31,7 +31,6 @@ import BottomBar from "../../components/layout/BottomBar";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import HomeIcon from "@mui/icons-material/Home";
 import SearchIcon from "@mui/icons-material/Search";
 import { isAxiosError } from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -54,12 +53,12 @@ type SnackbarState = {
 
 type UserFormState = {
   id?: string;
-  name: string;
-  lastName: string;
-  email: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
   rut: string;
   roles: string[];
-  password: string;
+  contrasena: string;
 };
 
 const FALLBACK_ROLES = ["admin", "vendedor", "cliente", "moderador"];
@@ -81,26 +80,26 @@ const defaultSnackState: SnackbarState = {
 
 const buildEmptyFormState = (): UserFormState => ({
   id: undefined,
-  name: "",
-  lastName: "",
-  email: "",
+  nombre: "",
+  apellido: "",
+  correo: "",
   rut: "",
   roles: ["cliente"],
-  password: "",
+  contrasena: "",
 });
 
 const toFormState = (user: UserRecord): UserFormState => ({
   id: user.id,
-  name: user.name,
-  lastName: user.lastName,
-  email: user.email,
+  nombre: user.nombre,
+  apellido: user.apellido,
+  correo: user.correo,
   rut: user.rut ? formatRut(user.rut) : "",
   roles: Array.isArray(user.roles)
     ? user.roles
         .map((role) => normaliseRoleValue(role))
         .filter(Boolean)
     : [],
-  password: "",
+  contrasena: "",
 });
 
 function AdminUsers() {
@@ -279,14 +278,15 @@ function AdminUsers() {
     const normalisedQuery = query.replace(/[.\-_\s]/g, "");
 
     return users.filter((user) => {
+      const fullName = `${user.nombre} ${user.apellido}`.trim();
       const candidates = [
         user.id,
-        user.email,
+        user.correo,
         user.rut,
         user.rut ? formatRut(user.rut) : null,
-        user.name,
-        user.lastName,
-        `${user.name} ${user.lastName}`,
+        user.nombre,
+        user.apellido,
+        fullName || null,
       ]
         .filter((value): value is string => Boolean(value))
         .map((value) => value.toLowerCase());
@@ -316,20 +316,20 @@ function AdminUsers() {
   };
 
   const validateForm = (data: UserFormState) => {
-    if (!data.name.trim()) return "El nombre es obligatorio";
-    if (!data.lastName.trim()) return "El apellido es obligatorio";
-    const email = data.email.trim().toLowerCase();
-    if (!email) return "El correo es obligatorio";
+    if (!data.nombre.trim()) return "El nombre es obligatorio";
+    if (!data.apellido.trim()) return "El apellido es obligatorio";
+    const correo = data.correo.trim().toLowerCase();
+    if (!correo) return "El correo es obligatorio";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Formato de correo inválido";
+    if (!emailRegex.test(correo)) return "Formato de correo inválido";
     if (!data.roles.length) return "Selecciona al menos un rol";
     if (data.rut.trim() && !isRutFormatValid(data.rut.trim())) {
       return "El RUT debe tener el formato XX.XXX.XXX-Y";
     }
-    if (!data.id && data.password.trim().length < 6) {
+    if (!data.id && data.contrasena.trim().length < 6) {
       return "La contraseña debe tener mínimo 6 caracteres";
     }
-    if (data.id && data.password && data.password.trim().length > 0 && data.password.trim().length < 6) {
+    if (data.id && data.contrasena && data.contrasena.trim().length > 0 && data.contrasena.trim().length < 6) {
       return "La contraseña debe tener mínimo 6 caracteres";
     }
     return null;
@@ -343,20 +343,15 @@ function AdminUsers() {
     }
 
     const payload: Record<string, unknown> = {
-      name: formState.name.trim(),
-      lastName: formState.lastName.trim(),
-      email: formState.email.trim().toLowerCase(),
+      nombre: formState.nombre.trim(),
+      apellido: formState.apellido.trim(),
+      correo: formState.correo.trim().toLowerCase(),
       rut: normaliseRut(formState.rut) || undefined,
       roles: formState.roles,
     };
-    if (formState.password.trim().length > 0) {
-      const newPassword = formState.password.trim();
-      payload.password = newPassword;
-      payload.newPassword = newPassword;
-      payload.passwordConfirmation = newPassword;
-      payload.password_confirmation = newPassword;
-      payload.confirmPassword = newPassword;
-      payload.password_confirm = newPassword;
+    if (formState.contrasena.trim().length > 0) {
+      const newPassword = formState.contrasena.trim();
+      payload.contrasena = newPassword;
     }
 
     try {
@@ -486,16 +481,16 @@ function AdminUsers() {
             <TableBody>
               {filteredUsers.length ? (
                 filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                    <TableRow key={user.id}>
                     <TableCell>
                       <Typography fontWeight={600}>
-                        {user.name} {user.lastName}
+                        {user.nombre} {user.apellido}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         ID: {user.id}
                       </Typography>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.correo}</TableCell>
                     <TableCell>{user.rut ? formatRut(user.rut) : "—"}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
@@ -541,17 +536,17 @@ function AdminUsers() {
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Nombre"
-                value={formState.name}
+                value={formState.nombre}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, name: event.target.value }))
+                  setFormState((prev) => ({ ...prev, nombre: event.target.value }))
                 }
                 fullWidth
               />
               <TextField
-                label="Apellidos"
-                value={formState.lastName}
+                label="Apellido"
+                value={formState.apellido}
                 onChange={(event) =>
-                  setFormState((prev) => ({ ...prev, lastName: event.target.value }))
+                  setFormState((prev) => ({ ...prev, apellido: event.target.value }))
                 }
                 fullWidth
               />
@@ -559,9 +554,9 @@ function AdminUsers() {
             <TextField
               label="Correo electrónico"
               type="email"
-              value={formState.email}
+              value={formState.correo}
               onChange={(event) =>
-                setFormState((prev) => ({ ...prev, email: event.target.value }))
+                setFormState((prev) => ({ ...prev, correo: event.target.value }))
               }
               fullWidth
             />
@@ -611,9 +606,9 @@ function AdminUsers() {
             <TextField
               label={formState.id ? "Actualizar contraseña" : "Contraseña"}
               type="password"
-              value={formState.password}
+              value={formState.contrasena}
               onChange={(event) =>
-                setFormState((prev) => ({ ...prev, password: event.target.value }))
+                setFormState((prev) => ({ ...prev, contrasena: event.target.value }))
               }
               fullWidth
               helperText={
@@ -719,11 +714,11 @@ function AdminUsers() {
                   }}
                 >
                   <Typography fontWeight={600}>
-                    {request.applicant?.name} {request.applicant?.lastName}
+                    {request.applicant?.nombre ?? request.applicant?.name} {request.applicant?.apellido ?? request.applicant?.lastName}
                   </Typography>
-                  {request.applicant?.email && (
+                  {(request.applicant?.correo ?? request.applicant?.email) && (
                     <Typography variant="body2" color="text.secondary">
-                      {request.applicant.email}
+                      {request.applicant?.correo ?? request.applicant?.email}
                     </Typography>
                   )}
                   <Typography variant="body2" fontWeight={600}>

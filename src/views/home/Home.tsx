@@ -7,7 +7,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  IconButton,
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";

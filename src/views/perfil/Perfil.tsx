@@ -33,14 +33,14 @@ function Perfil() {
   const [bio, setBio] = useState("");
   const [currentBio, setCurrentBio] = useState("");
   const [currentPhoto, setCurrentPhoto] = useState("");
-  const [name, setName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
 
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [contrasenaActual, setContrasenaActual] = useState("");
+  const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [preferencesText, setPreferencesText] = useState("");
   const [currentPreferences, setCurrentPreferences] = useState("");
 
@@ -67,24 +67,33 @@ function Perfil() {
     setCurrentPreferences(resolvedPrefsText);
 
     // Estados de edición
-    const resolvedPhoto = resolvePublicApiUrl((userData as any).photo);
+    const resolvedPhotoValue =
+      (userData as any).foto ??
+      (userData as any).photo ??
+      "";
+    const resolvedPhoto = resolvePublicApiUrl(resolvedPhotoValue);
     if (!photoFileRef.current) {
       setPhoto(resolvedPhoto);
     }
     setCurrentPhoto(resolvedPhoto);
     setPhotoFile(null);
     setBio(String(resolvedBio || ""));
-    setName((userData as any).name || "");
-    setLastName((userData as any).lastName || "");
-    const resolvedEmail = (details as any)?.email ?? (userData as any)?.email ?? "";
-    setEmail(resolvedEmail);
+    setNombre((userData as any).nombre ?? (userData as any).name ?? "");
+    setApellido((userData as any).apellido ?? (userData as any).lastName ?? "");
+    const resolvedCorreo =
+      (details as any)?.correo ??
+      (userData as any)?.correo ??
+      (details as any)?.email ??
+      (userData as any)?.email ??
+      "";
+    setCorreo(resolvedCorreo);
     const resolvedTelefono =
       (details as any)?.telefono ??
       (details as any)?.phone ??
       (userData as any)?.telefono ??
       (userData as any)?.phone ??
       "";
-    setPhone(resolvedTelefono);
+    setTelefono(resolvedTelefono);
     setPreferencesText(resolvedPrefsText);
   };
 
@@ -115,7 +124,11 @@ function Perfil() {
             "";
           setCurrentBio(String(resolvedBio || ""));
           setCurrentPreferences(parsePreferencesText(resolvedPrefs));
-          const resolvedPhoto = resolvePublicApiUrl((userData as any).photo);
+          const resolvedPhotoValue =
+            (userData as any).foto ??
+            (userData as any).photo ??
+            "";
+          const resolvedPhoto = resolvePublicApiUrl(resolvedPhotoValue);
           setCurrentPhoto(resolvedPhoto);
           if (!photoFileRef.current) {
             setPhoto(resolvedPhoto);
@@ -139,8 +152,8 @@ function Perfil() {
     try {
       const preferencesPayload = buildPreferencesObjectFromText(preferencesText) ?? {};
       const response = await userService.saveProfileDetails({
-        name,
-        lastName,
+        nombre,
+        apellido,
         biografia: bio,
         foto: photoFile,
         preferencias: preferencesPayload,
@@ -177,9 +190,9 @@ function Perfil() {
         prev
           ? {
               ...prev,
-              name,
-              lastName,
-              ...(serverPhoto ? { photo: serverPhoto } : {}),
+              nombre,
+              apellido,
+              ...(serverPhoto ? { foto: serverPhoto, photo: serverPhoto } : {}),
               ...(preferencesPayload ? { preferencias: preferencesPayload } : {}),
             }
           : prev
@@ -201,59 +214,64 @@ function Perfil() {
 
   const handleSaveAccount = async () => {
     if (!user) return;
-    if (password && password !== confirmPassword) {
+    if (nuevaContrasena && nuevaContrasena !== confirmarContrasena) {
       alert("⚠️ Las contraseñas no coinciden");
       return;
     }
-    if (password && password.length < 6) {
+    if (nuevaContrasena && nuevaContrasena.length < 6) {
       alert("⚠️ La nueva contraseña debe tener al menos 6 caracteres");
       return;
     }
-    if (password && !currentPasswordInput) {
+    if (nuevaContrasena && !contrasenaActual) {
       alert("⚠️ Debes ingresar tu contraseña actual para cambiarla");
       return;
     }
     try {
       const response = await userService.saveProfileDetails({
-        email,
-        telefono: phone,
-        ...(password
+        correo,
+        telefono,
+        ...(nuevaContrasena
           ? {
-              currentPassword: currentPasswordInput,
-              newPassword: password,
+              contrasenaActual,
+              nuevaContrasena,
             }
           : {}),
       });
-      const responseEmail = typeof (response as any)?.email === "string" ? String((response as any).email) : null;
-      const responsePhone =
+      const responseCorreo =
+        typeof (response as any)?.correo === "string"
+          ? String((response as any).correo)
+          : typeof (response as any)?.email === "string"
+            ? String((response as any).email)
+            : null;
+      const responseTelefono =
         typeof (response as any)?.telefono === "string"
           ? String((response as any).telefono)
           : typeof (response as any)?.phone === "string"
             ? String((response as any).phone)
             : null;
 
-      if (responseEmail) {
-        setEmail(responseEmail);
+      if (responseCorreo) {
+        setCorreo(responseCorreo);
       }
-      if (responsePhone) {
-        setPhone(responsePhone);
+      if (responseTelefono) {
+        setTelefono(responseTelefono);
       }
       setUser((prev: any) =>
         prev
           ? {
               ...prev,
-              ...(responseEmail ? { email: responseEmail } : {}),
-              ...(responsePhone ? { phone: responsePhone, telefono: responsePhone } : {}),
+              ...(responseCorreo ? { correo: responseCorreo, email: responseCorreo } : {}),
+              ...(responseTelefono ? { telefono: responseTelefono, phone: responseTelefono } : {}),
             }
           : prev
       );
       alert("✅ Datos de cuenta actualizados con éxito");
       await refreshProfile();
-      if (password) {
-        setCurrentPasswordInput("");
+      if (nuevaContrasena) {
+        setContrasenaActual("");
       }
-      setPassword("");
-      setConfirmPassword("");
+      setNuevaContrasena("");
+      setConfirmarContrasena("");
     } catch (err) {
       console.error("❌ Error al actualizar datos de cuenta:", err);
       alert("❌ No se pudo actualizar los datos");
@@ -350,10 +368,12 @@ function Perfil() {
           </Avatar>
           <Box>
             <Typography variant="h6" fontWeight="bold">
-              {user ? `${user.name} ${user.lastName}` : "Cargando..."}
+              {user
+                ? `${user?.nombre ?? user?.name ?? ""} ${user?.apellido ?? user?.lastName ?? ""}`.trim() || "Sin nombre"
+                : "Cargando..."}
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
-              {user?.email}
+              {user?.correo ?? user?.email ?? "Sin correo"}
             </Typography>
           </Box>
         </Box>
@@ -426,15 +446,15 @@ function Perfil() {
             label="Nombre"
             fullWidth
             margin="normal"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
           />
           <TextField
             label="Apellido"
             fullWidth
             margin="normal"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            value={apellido}
+            onChange={(e) => setApellido(e.target.value)}
           />
           <TextField
             label="Biografía"
@@ -460,24 +480,24 @@ function Perfil() {
             type="email"
             fullWidth
             margin="normal"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
           />
         <TextField
           label="Teléfono"
           type="tel"
           fullWidth
           margin="normal"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
         />
         <TextField
           label="Contraseña actual"
           type="password"
           fullWidth
           margin="normal"
-          value={currentPasswordInput}
-          onChange={(e) => setCurrentPasswordInput(e.target.value)}
+          value={contrasenaActual}
+          onChange={(e) => setContrasenaActual(e.target.value)}
           helperText="Requerida solo si deseas cambiar tu contraseña"
         />
         <TextField
@@ -485,16 +505,16 @@ function Perfil() {
           type="password"
           fullWidth
           margin="normal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={nuevaContrasena}
+            onChange={(e) => setNuevaContrasena(e.target.value)}
           />
           <TextField
             label="Confirmar contraseña"
             type="password"
             fullWidth
             margin="normal"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            value={confirmarContrasena}
+            onChange={(e) => setConfirmarContrasena(e.target.value)}
           />
           <Button variant="contained" color="primary" sx={{ mt: 2, textTransform: "none", fontWeight: 600, py: 1.1 }} onClick={handleSaveAccount}>
             Guardar Cambios

@@ -1,6 +1,4 @@
-import { AppBar, Toolbar, Box, Paper, Typography, TextField, Button, IconButton, InputBase, Snackbar, Alert, CircularProgress } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
+import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, CircularProgress } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import TopBar from "../../components/layout/TopBar";
 import BottomBar from "../../components/layout/BottomBar";
@@ -10,7 +8,7 @@ import BrandLogo from "../../components/BrandLogo";
 import { authService } from "../../db/services/authService";
 
 function ResetPass() {
-  const [email, setEmail] = useState("");
+  const [correo, setCorreo] = useState("");
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState<{
     open: boolean;
@@ -23,16 +21,16 @@ function ResetPass() {
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
   const handleResetPassword = async () => {
-    if (!email) {
+    if (!correo) {
       return setSnack({ open: true, message: "Ingresa tu correo", severity: "warning" });
     }
-    if (!isValidEmail(email)) {
+    if (!isValidEmail(correo)) {
       return setSnack({ open: true, message: "Formato de correo no válido", severity: "error" });
     }
 
     setLoading(true);
     try {
-      await authService.resetPassword(email);
+      await authService.resetPassword(correo);
       setSent(true);
       setSnack({
         open: true,
@@ -41,7 +39,7 @@ function ResetPass() {
       });
     } catch (error: any) {
       if (error?.response?.status === 404) {
-        setSnack({ open: true, message: "No existe un usuario con ese email", severity: "error" });
+        setSnack({ open: true, message: "No existe un usuario con ese correo", severity: "error" });
       } else {
         setSnack({ open: true, message: "No se pudo enviar el correo de recuperación", severity: "error" });
       }
@@ -87,11 +85,11 @@ function ResetPass() {
                 type="email"
                 fullWidth
                 size="small"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={email.length > 0 && !isValidEmail(email)}
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
+                error={correo.length > 0 && !isValidEmail(correo)}
                 helperText={
-                  email.length > 0 && !isValidEmail(email)
+                  correo.length > 0 && !isValidEmail(correo)
                     ? "Ingresa un correo válido (ej: nombre@dominio.com)"
                     : " "
                 }
@@ -106,7 +104,7 @@ function ResetPass() {
                 onClick={handleResetPassword}
                 sx={{ mt: 0.5, py: 1.1, textTransform: "none", fontWeight: 600 }}
               >
-                {loading ? <CircularProgress size={22} /> : "Enviar email"}
+                {loading ? <CircularProgress size={22} /> : "Enviar correo"}
               </Button>
             </>
           ) : (
@@ -116,7 +114,7 @@ function ResetPass() {
                 ¡Correo enviado!
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Te enviamos un mensaje a <strong>{email}</strong> con los pasos para
+                Te enviamos un mensaje a <strong>{correo}</strong> con los pasos para
                 restablecer tu contraseña.
               </Typography>
 

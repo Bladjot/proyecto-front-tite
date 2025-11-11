@@ -1,5 +1,4 @@
 import { Alert, Snackbar } from "@mui/material";
-import React from "react";
 
 export type InfoSnackbarProps = {
   open: boolean;
@@ -18,4 +17,3 @@ export default function InfoSnackbar({ open, message, severity = "info", onClose
     </Snackbar>
   );
 }
-
