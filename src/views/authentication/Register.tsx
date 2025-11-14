@@ -2,15 +2,13 @@ import { Box, Button, IconButton, Typography, TextField, Divider, Paper, Snackba
 import RemoveRedEyeOutlinedIcon from "@mui/icons-material/RemoveRedEyeOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { isAxiosError } from "axios";
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { authService, type AuthResponse } from "../../db/services/authService";
 import { normaliseRut, sanitiseRutInput, isRutFormatValid } from "../../utils/rut";
 import { resolvePostAuthRedirect } from "../../utils/auth";
 // Importar Recaptcha
 import ReCAPTCHA from "react-google-recaptcha";
-// ⬇️ NUEVOS LOGOS
-import googleLogo from "../../assets/auth/google.png";
 import TopBar from "../../components/layout/TopBar";
 import BottomBar from "../../components/layout/BottomBar";
 
@@ -36,6 +34,32 @@ function Register() {
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchParamsKey = searchParams.toString();
+
+  useEffect(() => {
+    if (searchParams.get("fromGoogle") !== "1") return;
+
+    const nombreParam = (searchParams.get("nombre") || "").trim();
+    const apellidoParam = (searchParams.get("apellido") || "").trim();
+    const correoParam = (searchParams.get("correo") || "").trim().toLowerCase();
+
+    if (nombreParam) {
+      setNombre((prev) => (prev ? prev : nombreParam));
+    }
+    if (apellidoParam) {
+      setApellido((prev) => (prev ? prev : apellidoParam));
+    }
+    if (correoParam) {
+      setCorreo((prev) => (prev ? prev : correoParam));
+    }
+
+    setSnack({
+      open: true,
+      message: "Completa tu registro agregando el RUT para finalizar el acceso con Google.",
+      severity: "info",
+    });
+  }, [searchParamsKey]);
 
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -144,28 +168,6 @@ function Register() {
           <Typography variant="h6" className="h-inter" fontWeight={700} textAlign="center">
             Registro
           </Typography>
-
-          {/* Google arriba con ícono real */}
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => (window.location.href = "http://localhost:3000/api/auth/google")}
-            sx={{
-              mt: 2,
-              textTransform: "none",
-              bgcolor: "white",
-              borderColor: "#d0d0d0",
-              color: "#444",
-              "&:hover": { bgcolor: "#f5f5f5" },
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 1,
-            }}
-          >
-            <Box component="img" src={googleLogo} alt="Google" sx={{ width: 18, height: 18 }} />
-            Registrarse con Google
-          </Button>
 
           <Divider sx={{ my: 1.5 }} />
 
