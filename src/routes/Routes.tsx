@@ -20,6 +20,9 @@ const Register = Loadable(
 const ResetPass = Loadable(
   lazy(() => import("../views/authentication/ResetPass"))
 );
+const ResetPassword = Loadable(
+  lazy(() => import("../views/authentication/ResetPassword"))
+);
 const GoogleCallback = Loadable(
   lazy(() => import("../views/authentication/GoogleCallback"))
 );
@@ -52,6 +55,7 @@ const Router = [
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "forgot-password", element: <ResetPass /> },
+      { path: "reset-password", element: <ResetPassword /> },
       { path: "google/callback", element: <GoogleCallback /> },
       { path: "*", element: <Navigate to="/error/404" /> },
     ],

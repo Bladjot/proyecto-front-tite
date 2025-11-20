@@ -30,7 +30,7 @@ function ResetPass() {
 
     setLoading(true);
     try {
-      await authService.resetPassword(correo);
+      await authService.requestPasswordReset(correo);
       setSent(true);
       setSnack({
         open: true,
