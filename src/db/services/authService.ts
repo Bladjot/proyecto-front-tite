@@ -214,8 +214,13 @@ export const authService = {
     return normaliseAuthResponse(response.data);
   },
 
-  resetPassword: async (correo: string) => {
+  requestPasswordReset: async (correo: string) => {
     const response = await api.post(getAuthPath("/auth/forgot-password"), { correo });
+    return response.data;
+  },
+
+  resetPassword: async (payload: { token?: string; correo?: string; nuevaContrasena: string }) => {
+    const response = await api.post(getAuthPath("/auth/reset-password"), payload);
     return response.data;
   },
 
