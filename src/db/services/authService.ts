@@ -31,6 +31,27 @@ export type AuthResponse = {
   redirectTo?: string;
 };
 
+export type GoogleProfile = {
+  correo?: string;
+  email?: string;
+  nombre?: string;
+  name?: string;
+  apellido?: string;
+  lastName?: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+};
+
+export type GoogleCallbackResponse = {
+  requiresRegistration: boolean;
+  profile?: GoogleProfile;
+  access_token?: string;
+  redirectTo?: string;
+  user?: AuthUser;
+  message?: string;
+};
+
 const getAuthPath = (resource: string) => {
   const baseURL = (api.defaults.baseURL || "").replace(/\/+$/, "");
   const needsApiPrefix = !/\/api$/i.test(baseURL);
@@ -127,6 +148,57 @@ const normaliseAuthResponse = (data: AuthResponse): AuthResponse => {
   };
 };
 
+const normaliseGoogleProfile = (profile?: GoogleProfile) => {
+  if (!profile) return undefined;
+
+  const correo =
+    typeof profile.correo === "string"
+      ? profile.correo
+      : typeof profile.email === "string"
+        ? profile.email
+        : undefined;
+
+  const nombre =
+    typeof profile.nombre === "string"
+      ? profile.nombre
+      : typeof profile.name === "string"
+        ? profile.name
+        : typeof profile.given_name === "string"
+          ? profile.given_name
+          : undefined;
+
+  const apellido =
+    typeof profile.apellido === "string"
+      ? profile.apellido
+      : typeof profile.lastName === "string"
+        ? profile.lastName
+        : typeof profile.family_name === "string"
+          ? profile.family_name
+          : undefined;
+
+  const picture = typeof profile.picture === "string" ? profile.picture : undefined;
+
+  return {
+    correo: correo?.trim(),
+    nombre: nombre?.trim(),
+    apellido: apellido?.trim(),
+    picture,
+  };
+};
+
+const normaliseGoogleCallbackResponse = (data: GoogleCallbackResponse): GoogleCallbackResponse => {
+  if (!data) return data;
+
+  const normalisedUser = data.user ? mapUserFields({ ...data.user }) : undefined;
+  const normalisedProfile = normaliseGoogleProfile(data.profile);
+
+  return {
+    ...data,
+    profile: normalisedProfile,
+    user: normalisedUser,
+  };
+};
+
 export const authService = {
   login: async (correo: string, contrasena: string, recaptchaToken: string): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>(getAuthPath("/auth/login"), {
@@ -145,5 +217,16 @@ export const authService = {
   resetPassword: async (correo: string) => {
     const response = await api.post(getAuthPath("/auth/forgot-password"), { correo });
     return response.data;
+  },
+
+  googleCallback: async (params: { code: string; state?: string | null }): Promise<GoogleCallbackResponse> => {
+    const response = await api.get<GoogleCallbackResponse>(getAuthPath("/auth/google/callback"), {
+      params: {
+        code: params.code,
+        state: params.state ?? undefined,
+      },
+      withCredentials: true,
+    });
+    return normaliseGoogleCallbackResponse(response.data);
   },
 };

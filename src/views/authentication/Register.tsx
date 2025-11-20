@@ -36,13 +36,19 @@ function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchParamsKey = searchParams.toString();
+  const [postGoogleRedirect, setPostGoogleRedirect] = useState<string | null>(null);
 
   useEffect(() => {
-    if (searchParams.get("fromGoogle") !== "1") return;
+    const provider = searchParams.get("provider");
+    const fromGoogle =
+      (provider && provider.toLowerCase() === "google") ||
+      searchParams.get("fromGoogle") === "1";
+    if (!fromGoogle) return;
 
     const nombreParam = (searchParams.get("nombre") || "").trim();
     const apellidoParam = (searchParams.get("apellido") || "").trim();
     const correoParam = (searchParams.get("correo") || "").trim().toLowerCase();
+    const redirectParam = searchParams.get("redirectTo");
 
     if (nombreParam) {
       setNombre((prev) => (prev ? prev : nombreParam));
@@ -53,6 +59,10 @@ function Register() {
     if (correoParam) {
       setCorreo((prev) => (prev ? prev : correoParam));
     }
+    if (redirectParam && !/\/register\/?$/i.test(redirectParam)) {
+      sessionStorage.setItem("postGoogleRedirect", redirectParam);
+      setPostGoogleRedirect(redirectParam);
+    }
 
     setSnack({
       open: true,
@@ -60,6 +70,14 @@ function Register() {
       severity: "info",
     });
   }, [searchParamsKey]);
+
+  useEffect(() => {
+    if (postGoogleRedirect) return;
+    const stored = sessionStorage.getItem("postGoogleRedirect");
+    if (stored) {
+      setPostGoogleRedirect(stored);
+    }
+  }, [postGoogleRedirect]);
 
   // Validaciones
   const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -126,7 +144,10 @@ function Register() {
         message: `Usuario ${user?.correo || trimmedCorreo} creado con éxito`,
         severity: "success",
       });
-      const target = resolvePostAuthRedirect(response?.redirectTo, response?.user?.roles);
+      const target = postGoogleRedirect
+        ? resolvePostAuthRedirect(postGoogleRedirect, response?.user?.roles)
+        : resolvePostAuthRedirect(response?.redirectTo, response?.user?.roles);
+      sessionStorage.removeItem("postGoogleRedirect");
       localStorage.setItem("redirectTo", target);
       setTimeout(() => navigate(target, { replace: true }), 900);
     } catch (error: unknown) {

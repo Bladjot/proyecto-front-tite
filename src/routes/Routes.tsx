@@ -20,10 +20,16 @@ const Register = Loadable(
 const ResetPass = Loadable(
   lazy(() => import("../views/authentication/ResetPass"))
 );
+const GoogleCallback = Loadable(
+  lazy(() => import("../views/authentication/GoogleCallback"))
+);
 const AdminUsers = Loadable(lazy(() => import("../views/admin/AdminUsers")));
 
 // 👇 Perfil (solo vista principal)
 const Perfil = Loadable(lazy(() => import("../views/perfil/Perfil")));
+const RegisterRedirect = Loadable(
+  lazy(() => import("./RegisterRedirect"))
+);
 
 const Vendedor = Loadable(lazy(() => import("../views/vendedor/Vendedor")));
 const AcreditarVendedor = Loadable(
@@ -46,8 +52,13 @@ const Router = [
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "forgot-password", element: <ResetPass /> },
+      { path: "google/callback", element: <GoogleCallback /> },
       { path: "*", element: <Navigate to="/error/404" /> },
     ],
+  },
+  {
+    path: "/register",
+    element: <RegisterRedirect />,
   },
   {
     path: "/home",

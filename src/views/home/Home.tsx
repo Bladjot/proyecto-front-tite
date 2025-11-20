@@ -8,8 +8,8 @@ import {
   ListItemButton,
   ListItemText,
 } from "@mui/material";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredUserRoles } from "../../utils/auth";
 import TopBar from "../../components/layout/TopBar";
 import BottomBar from "../../components/layout/BottomBar";
@@ -23,8 +23,25 @@ type MenuOption = {
 function Home() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const roles = useMemo(() => getStoredUserRoles(), []);
   const isAdmin = roles.includes("admin");
+
+  // Maneja el token entregado por el backend vía query param (?token=JWT)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+    if (!token) return;
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("isLoggedIn", "true");
+
+    // Limpia el token de la URL
+    params.delete("token");
+    const query = params.toString();
+    const newUrl = `${location.pathname}${query ? `?${query}` : ""}${location.hash || ""}`;
+    window.history.replaceState(null, document.title, newUrl);
+  }, [location.hash, location.pathname, location.search]);
 
   const menuOptions = useMemo<MenuOption[]>(() => {
     const baseOptions: MenuOption[] = [
