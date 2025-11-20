@@ -328,8 +328,8 @@ function Perfil() {
           </Typography>
           {/* Menú principal ahora está en la TopBar */}
           <List>
-            {["Perfil", "Vendedor", "X", "X"].map((text, index) => (
-              <React.Fragment key={index}>
+            {["Perfil", "Vendedor"].map((text) => (
+              <React.Fragment key={text}>
                 <ListItem disablePadding>
                   <ListItemButton onClick={() => handleMenuClick(text)}>
                     <ListItemText primary={text} />
