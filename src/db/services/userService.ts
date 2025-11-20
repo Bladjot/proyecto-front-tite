@@ -441,15 +441,20 @@ export const userService = {
   createVendorAccreditation: async (payload: {
     nombre_tienda: string;
     telefono_contacto: string;
-    rut_empresa: string;
+    rut_empresa?: string;
   }) => {
+    const requestBody: Record<string, string> = {
+      nombre_tienda: payload.nombre_tienda,
+      telefono_contacto: payload.telefono_contacto,
+    };
+
+    if (payload.rut_empresa && payload.rut_empresa.trim().length > 0) {
+      requestBody.rut_empresa = payload.rut_empresa.trim();
+    }
+
     const response = await api.post(
       "/vendor-accreditations",
-      {
-        nombre_tienda: payload.nombre_tienda,
-        telefono_contacto: payload.telefono_contacto,
-        rut_empresa: payload.rut_empresa,
-      },
+      requestBody,
       { headers: getAuthHeaders() }
     );
     return response.data;

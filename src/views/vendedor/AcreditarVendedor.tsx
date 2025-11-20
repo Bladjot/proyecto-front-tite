@@ -31,12 +31,12 @@ function AcreditarVendedor() {
     const trimmedContact = contactNumber.trim();
     const trimmedRut = rutEmpresa.trim();
 
-    if (!trimmedStore || !trimmedContact || !trimmedRut) {
-      setFeedback({ type: "error", message: "Todos los campos son obligatorios." });
+    if (!trimmedStore || !trimmedContact) {
+      setFeedback({ type: "error", message: "Nombre de tienda y numero de contacto son obligatorios." });
       return;
     }
 
-    if (!isRutFormatValid(trimmedRut)) {
+    if (trimmedRut && !isRutFormatValid(trimmedRut)) {
       setFeedback({ type: "error", message: "El RUT debe tener el formato 12.345.678-9." });
       return;
     }
@@ -47,7 +47,7 @@ function AcreditarVendedor() {
       await userService.createVendorAccreditation({
         nombre_tienda: trimmedStore,
         telefono_contacto: trimmedContact,
-        rut_empresa: sanitiseRutInput(trimmedRut),
+        rut_empresa: trimmedRut ? sanitiseRutInput(trimmedRut) : undefined,
       });
       setFeedback({
         type: "success",
@@ -122,11 +122,11 @@ function AcreditarVendedor() {
           />
 
           <TextField
-            label="RUT empresa"
+            label="RUT empresa (opcional)"
             value={rutEmpresa}
             onChange={(e) => setRutEmpresa(e.target.value)}
-            helperText="Formato esperado: 12.345.678-9"
-            required
+            helperText="Opcional. Si lo tienes, usa el formato 12.345.678-9"
+            error={Boolean(rutEmpresa.trim()) && !isRutFormatValid(rutEmpresa.trim())}
             fullWidth
           />
 
