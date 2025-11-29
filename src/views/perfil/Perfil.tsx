@@ -17,7 +17,7 @@ import { userService } from "../../db/services/userService";
 import { resolvePublicApiUrl } from "../../utils/media";
 import { buildPreferencesObjectFromText, parsePreferencesText } from "../../utils/preferences";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -546,7 +546,7 @@ function Perfil() {
         </Paper>
       </Box>
       </div>
-      <BottomBar />
+      <PulgashopFooter />
     </div>
   );
 }

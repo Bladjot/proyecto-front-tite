@@ -18,7 +18,7 @@ import { isAxiosError } from "axios";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 import TopBar from "../../components/layout/TopBar";
 import { authService } from "../../db/services/authService";
 
@@ -278,7 +278,7 @@ function ResetPassword() {
           {snack.message}
         </Alert>
       </Snackbar>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

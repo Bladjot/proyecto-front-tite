@@ -1,7 +1,7 @@
 import { Box, Paper, Typography, TextField, Button, Snackbar, Alert, CircularProgress } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo";
@@ -166,7 +166,7 @@ function ResetPass() {
           {snack.message}
         </Alert>
       </Snackbar>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

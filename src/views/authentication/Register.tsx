@@ -10,7 +10,7 @@ import { resolvePostAuthRedirect } from "../../utils/auth";
 // Importar Recaptcha
 import ReCAPTCHA from "react-google-recaptcha";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Register() {
@@ -368,7 +368,7 @@ function Register() {
           {snack.message}
         </Alert>
       </Snackbar>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

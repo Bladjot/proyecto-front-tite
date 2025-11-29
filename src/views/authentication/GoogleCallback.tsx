@@ -2,7 +2,7 @@ import { Alert, Box, Button, CircularProgress, Paper, Typography } from "@mui/ma
 import { isAxiosError } from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 import TopBar from "../../components/layout/TopBar";
 import {
   authService,
@@ -197,7 +197,7 @@ export default function GoogleCallback() {
         </Paper>
       </Box>
 
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

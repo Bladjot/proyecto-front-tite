@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { userService } from "../../db/services/userService";
 import { isRutFormatValid, sanitiseRutInput } from "../../utils/rut";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 
 function AcreditarVendedor() {
   const navigate = useNavigate();
@@ -159,7 +159,7 @@ function AcreditarVendedor() {
         </Stack>
       </Paper>
       </Box>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

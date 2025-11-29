@@ -12,16 +12,16 @@ const theme = createTheme({
   palette: {
     // Verde principal (revertido al definido originalmente)
     primary: {
-      main: "#10b981",
-      light: "#34d399",
-      dark: "#059669",
+      main: "#23C55E",
+      light: "#46d87f",
+      dark: "#1b9e4d",
       contrastText: "#ffffff",
     },
     // Mismo tono para secondary como al inicio
     secondary: {
-      main: "#10b981",
-      light: "#34d399",
-      dark: "#059669",
+      main: "#23C55E",
+      light: "#46d87f",
+      dark: "#1b9e4d",
       contrastText: "#ffffff",
     },
     background: {

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredUserRoles } from "../../utils/auth";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 import BrandLogo from "../../components/BrandLogo";
 
 type MenuOption = {
@@ -120,7 +120,7 @@ function Home() {
         <Typography variant="h6">En construcción...</Typography>
       </Paper>
       </div>
-      <BottomBar />
+      <PulgashopFooter />
 
       
     </div>

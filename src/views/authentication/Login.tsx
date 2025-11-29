@@ -12,7 +12,7 @@ import { resolvePostAuthRedirect } from "../../utils/auth";
 // IMPORTS DE LOGOS
 import googleLogo from "../../assets/auth/google.png";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 function Login() {
@@ -286,7 +286,7 @@ function Login() {
           {snack.message}
         </Alert>
       </Snackbar>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

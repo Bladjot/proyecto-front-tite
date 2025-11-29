@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getStoredUserRoles } from "../../utils/auth";
 import { normaliseRoleValue, userService } from "../../db/services/userService";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 
 function Vendedor() {
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ function Vendedor() {
             </Stack>
           </Box>
         </Box>
-        <BottomBar />
+        <PulgashopFooter />
       </Box>
     );
   }
@@ -114,7 +114,7 @@ function Vendedor() {
           </Button>
         </Box>
       </Box>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }

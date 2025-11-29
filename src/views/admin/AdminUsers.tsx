@@ -27,7 +27,7 @@ import {
   Typography,
 } from "@mui/material";
 import TopBar from "../../components/layout/TopBar";
-import BottomBar from "../../components/layout/BottomBar";
+import PulgashopFooter from "../../components/layout/PulgashopFooter";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -758,7 +758,7 @@ function AdminUsers() {
         )}
       </Paper>
       </Box>
-      <BottomBar />
+      <PulgashopFooter />
     </Box>
   );
 }
