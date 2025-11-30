@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function PulgashopFooter() {
   return (
     <footer className="bg-[#23C55E] text-white mt-12">
